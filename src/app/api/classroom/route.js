@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
-import { connectDB } from "@/lib/mongodb";
-import Classroom from "@/models/Classroom";
-import { authOptions } from "@/lib/auth";
+import { connectDB } from "../../../../lib/mongodb";
+import Classroom from "../../../../models/Classroom";
+import { authOptions } from "../../../../lib/auth";
 
 export async function GET(request) {
   try {

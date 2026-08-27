@@ -20,8 +20,8 @@ import {
   File,
 } from "lucide-react";
 
-import Navbar from "@/components/Navbar";
-import ResourceCard from "@/components/ResourceCard";
+import Navbar from "../../components/Navbarr";
+import ResourceCard from "../../components/ResourceCard";
 
 export default function ResourcesPage() {
   const router = useRouter();

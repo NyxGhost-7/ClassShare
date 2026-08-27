@@ -1,7 +1,7 @@
 import "./globals.css";
 
 import SessionProviderWrapper
-  from "@/components/SessionProvider";
+  from "../components/SessionProvider";
 
 export const metadata = {
   title: "ClassShare",

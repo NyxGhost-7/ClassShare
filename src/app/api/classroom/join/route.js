@@ -2,18 +2,14 @@ import { NextResponse } from "next/server";
 
 import { getServerSession } from "next-auth";
 
-import { connectDB } from "@/lib/mongodb";
-import Classroom from "@/models/Classroom";
+import { connectDB } from "../../../../lib/mongodb";
+import Classroom from "../../../../models/Classroom";
 
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "../../../../lib/auth";
 
 export async function POST(request) {
   try {
     await connectDB();
-
-    // =========================
-    // AUTH
-    // =========================
 
     const session =
       await getServerSession(

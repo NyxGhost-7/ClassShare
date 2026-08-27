@@ -15,8 +15,8 @@ import {
   Loader2,
 } from "lucide-react";
 
-import Navbar from "@/components/Navbar";
-import ResourceCard from "@/components/ResourceCard";
+import Navbar from "../../components/Navbar";
+import ResourceCard from "../../components/ResourceCard";
 
 export default function ClassroomPage() {
   const params = useParams();

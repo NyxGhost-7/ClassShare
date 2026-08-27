@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 
 import { getServerSession } from "next-auth";
 
-import { connectDB } from "@/lib/mongodb";
-import Classroom from "@/models/Classroom";
-import User from "@/models/User";
+import { connectDB } from "../../../../lib/mongodb";
+import Classroom from "../../../../models/Classroom";
+import User from "../../../../models/User";
 
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "../../../../lib/auth";
 
 function generateCode() {
   return (

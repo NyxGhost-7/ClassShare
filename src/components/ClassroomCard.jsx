@@ -17,13 +17,13 @@ export default function ClassroomCard({ classroom }) {
   return (
     <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-white/20 hover:bg-white/[0.07] hover:shadow-2xl">
 
-      {/* ================= HOVER GLOW ================= */}
+    
 
       <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-indigo-500/10 blur-[70px] transition duration-500 group-hover:bg-indigo-500/20" />
 
       <div className="pointer-events-none absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-purple-500/5 blur-[70px]" />
 
-      {/* ================= TOP ================= */}
+      
 
       <div className="relative flex items-start justify-between gap-4">
 

@@ -25,9 +25,6 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // ==========================================
-  // EMAIL / PASSWORD LOGIN
-  // ==========================================
 
   async function handleSubmit(e) {
     e.preventDefault();

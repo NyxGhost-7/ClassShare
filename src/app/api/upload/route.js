@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { connectDB } from "@/lib/mongodb";
-import cloudinary from "@/lib/cloudinary";
-import Resource from "@/models/Resources";
-import Classroom from "@/models/Classroom";
+import { connectDB } from "../../../lib/mongodb";
+import cloudinary from "../../../lib/cloudinary";
+import Resource from "../../../models/Resources";
+import Classroom from "../../../models/Classroom";
 
 export async function POST(request) {
   try {
@@ -16,7 +16,7 @@ export async function POST(request) {
     const description = formData.get("description");
     const classroomId = formData.get("classroomId");
 
-    /* ================= VALIDATION ================= */
+ 
 
     if (!file || !title || !classroomId) {
       return NextResponse.json(
