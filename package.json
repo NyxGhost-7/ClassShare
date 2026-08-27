@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "ClassShare",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
+    "lucide-react": "^1.31.0",
+    "mongoose": "^9.9.4",
     "next": "16.3.3",
+    "next-auth": "^4.24.15",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
