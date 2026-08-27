@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/mongodb";
 import Classroom from "@/models/Classroom";
-import Resource from "@/models/Resource";
+import Resource from "@/models/Resources";
 
 export async function GET(request) {
   try {

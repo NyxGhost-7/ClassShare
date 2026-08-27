@@ -8,8 +8,8 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 
-import Navbar from "@/components/Navbar";
-import UploadResource from "@/components/UploadResource";
+import Navbar from "../../Components/Navbar";
+import UploadResource from "../../Components/UploadResource";
 
 export default function UploadPage() {
   const searchParams = useSearchParams();
