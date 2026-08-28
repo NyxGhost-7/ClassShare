@@ -20,10 +20,7 @@ export default function Home() {
 
   const [classrooms, setClassrooms] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // =================================
-  // LOAD PUBLIC CLASSROOMS
-  // =================================
+ 
 
   useEffect(() => {
     loadPublicClassrooms();
@@ -69,8 +66,6 @@ export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
-      {/* ================= NAVBAR ================= */}
-
       <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
 
         <button
@@ -107,8 +102,6 @@ export default function Home() {
 
       </nav>
 
-      {/* ================= HERO ================= */}
-
       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-100px)] max-w-7xl flex-col items-center justify-center px-6 pb-20 pt-10 text-center">
 
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-400">
@@ -143,7 +136,6 @@ export default function Home() {
 
         </p>
 
-        {/* CTA */}
 
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
 
