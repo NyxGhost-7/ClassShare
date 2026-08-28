@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { connectDB } from "../../../lib/mongodb";
 import cloudinary from "../../../lib/cloudinary";
-import Resource from "../../../models/Resources";
+import Resource from "../../../models/Resource";
 import Classroom from "../../../models/Classroom";
 
 export async function POST(request) {

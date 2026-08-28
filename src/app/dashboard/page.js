@@ -55,21 +55,20 @@ export default function Dashboard() {
   const [loadingClassrooms, setLoadingClassrooms] =
     useState(true);
 
-
+  // Handles both the redirect-when-unauthenticated case
+  // and the fetch-when-authenticated case in one place,
+  // so loadingClassrooms never gets stuck at true.
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/auth/login");
-    }
-  }, [status, router]);
-
-
-  useEffect(() => {
-    if (status !== "authenticated") {
+      setLoadingClassrooms(false);
+      router.replace("/login");
       return;
     }
 
-    fetchClassrooms();
-  }, [status]);
+    if (status === "authenticated") {
+      fetchClassrooms();
+    }
+  }, [status, router]);
 
   const fetchClassrooms = async () => {
     try {
@@ -187,10 +186,6 @@ export default function Dashboard() {
     }
   };
 
-  // =========================
-  // JOIN CLASSROOM
-  // =========================
-
   const joinClassroom = async () => {
     if (!code.trim()) {
       alert(
@@ -290,7 +285,7 @@ export default function Dashboard() {
         <section className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
           <div>
 
-              <p className="mb-3 text-sm font-medium text-indigo-400">
+              <p className="mb-3 text-sm font-medium text-red-500">
                 Welcome back,{" "}
                 {session.user?.name?.split(" ")[0]}
                 
@@ -321,7 +316,7 @@ export default function Dashboard() {
                 onClick={() =>
                   setShowJoin(true)
                 }
-                className="group flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 font-semibold text-slate-200 transition hover:border-indigo-400/30 hover:bg-white/10"
+                className="group flex items-center justify-center gap-2 rounded-sm border border-white/10 bg-white/5 px-5 py-3 font-semibold text-slate-200 transition hover:border-indigo-400/30 hover:bg-white/10"
               >
                 <LogIn size={18} />
 
@@ -337,7 +332,7 @@ export default function Dashboard() {
                 onClick={() =>
                   setShowCreate(true)
                 }
-                className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-black to-gray-600 px-5 py-3 font-semibold text-white shadow-lg transition hover:scale-[1.03]"
+                className="group flex items-center justify-center gap-2 rounded-sm bg-gradient-to-r from-black to-gray-600 px-5 py-3 font-semibold text-white shadow-lg transition hover:scale-[1.03]"
               >
                 <Plus
                   size={19}
@@ -364,7 +359,7 @@ export default function Dashboard() {
               value={classrooms.length}
               label="My Classrooms"
             />
-
+{/* 
             <StatCard
               icon={
                 <BookOpen
@@ -383,13 +378,10 @@ export default function Dashboard() {
               }
               value="0"
               label="Learning Together"
-            />
+            /> */}
 
           </section>
 
-          {/* =========================
-              CLASSROOMS
-          ========================= */}
 
           <section className="mt-12">
 
@@ -486,10 +478,6 @@ export default function Dashboard() {
 
       </div>
 
-      {/* =========================
-          CREATE MODAL
-      ========================= */}
-
       {showCreate && (
 
         <Modal
@@ -566,7 +554,7 @@ export default function Dashboard() {
                   onClick={() =>
                     setPrivacy("public")
                   }
-                  className={`rounded-xl border p-4 text-left transition ${
+                  className={`rounded-lg border p-4 text-left transition ${
                     privacy === "public"
                       ? "border-indigo-400/50 bg-indigo-500/10"
                       : "border-white/10 bg-white/5 hover:bg-white/10"
@@ -662,9 +650,6 @@ export default function Dashboard() {
 
       )}
 
-      {/* =========================
-          JOIN MODAL
-      ========================= */}
 
       {showJoin && (
 
@@ -699,7 +684,7 @@ export default function Dashboard() {
                       .toUpperCase()
                   )
                 }
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 font-mono tracking-wider text-white uppercase outline-none placeholder:text-slate-600 focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/10"
+                className="w-full rounded-lg border border-white/10 bg-white/5 py-3 pl-11 pr-4 font-mono tracking-wider text-white uppercase outline-none placeholder:text-slate-600 focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/10"
               />
 
             </div>
@@ -714,7 +699,7 @@ export default function Dashboard() {
                 onClick={() =>
                   setShowJoin(false)
                 }
-                className="flex-1 rounded-xl border border-white/10 bg-white/5 py-3 font-semibold transition hover:bg-white/10"
+                className="flex-1 rounded-lg border border-white/10 bg-white/5 py-3 font-semibold transition hover:bg-white/10"
               >
                 Cancel
               </button>
@@ -742,21 +727,17 @@ export default function Dashboard() {
 }
 
 
-/* =========================
-   STAT CARD
-========================= */
-
 function StatCard({
   icon,
   value,
   label,
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition hover:-translate-y-1 hover:border-indigo-400/20 hover:bg-white/[0.06]">
+    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition hover:-translate-y-1 hover:border-indigo-400/20 hover:bg-white/[0.06]">
 
       <div className="flex items-center justify-between">
 
-        <div className="rounded-xl bg-indigo-500/10 p-3 text-indigo-300">
+        <div className="rounded-sm bg-indigo-500/10 p-3 text-indigo-300">
           {icon}
         </div>
 
@@ -774,10 +755,6 @@ function StatCard({
   );
 }
 
-
-/* =========================
-   MODAL
-========================= */
 
 function Modal({
   title,
@@ -797,7 +774,7 @@ function Modal({
 
       {/* MODAL */}
 
-      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-black p-7 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-white/10 bg-black p-7 shadow-2xl">
 
         <button
           onClick={onClose}

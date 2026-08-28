@@ -19,26 +19,39 @@ const ResourceSchema = new mongoose.Schema(
       enum: [
         "pdf",
         "doc",
+        "docx",
         "ppt",
+        "pptx",
         "image",
-        "link",
         "video",
+        "link",
         "other",
       ],
-      required: true,
+      default: "other",
     },
 
     url: {
       type: String,
       required: true,
-      trim: true,
     },
 
-    classroomId: {
+    // Cloudinary public_id
+    // Required for deleting uploaded files
+    publicId: {
+      type: String,
+      default: null,
+    },
+
+    classroom: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Classroom",
       required: true,
-      index: true,
+    },
+
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   {

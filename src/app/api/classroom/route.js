@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
-import { connectDB } from "../../../../lib/mongodb";
-import Classroom from "../../../../models/Classroom";
-import { authOptions } from "../../../../lib/auth";
+import { connectDB } from "../../../lib/mongodb";
+import Classroom from "../../../models/Classroom";
+import { authOptions } from "../../../lib/auth";
 
 export async function GET(request) {
   try {
-    // Check login
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -23,11 +22,30 @@ export async function GET(request) {
 
     await connectDB();
 
-    const { searchParams } =
-      new URL(request.url);
+    const { searchParams } = new URL(request.url);
 
     const code = searchParams.get("code");
     const id = searchParams.get("id");
+
+    // =========================
+    // GET ALL USER CLASSROOMS
+    // /api/classroom
+    // =========================
+
+    if (!id && !code) {
+      const classrooms = await Classroom.find({
+        $or: [
+          { host: session.user.id },
+          { members: session.user.id },
+        ],
+      })
+        .sort({ createdAt: -1 })
+        .populate("host", "name email image");
+
+      return NextResponse.json({
+        classrooms,
+      });
+    }
 
     let classroom;
 
@@ -37,14 +55,8 @@ export async function GET(request) {
 
     if (id) {
       classroom = await Classroom.findById(id)
-        .populate(
-          "host",
-          "name email image"
-        )
-        .populate(
-          "members",
-          "name email image"
-        );
+        .populate("host", "name email image")
+        .populate("members", "name email image");
     }
 
     // =========================
@@ -55,35 +67,9 @@ export async function GET(request) {
       classroom = await Classroom.findOne({
         code: code.trim().toUpperCase(),
       })
-        .populate(
-          "host",
-          "name email image"
-        )
-        .populate(
-          "members",
-          "name email image"
-        );
+        .populate("host", "name email image")
+        .populate("members", "name email image");
     }
-
-    // =========================
-    // NO ID / CODE
-    // =========================
-
-    else {
-      return NextResponse.json(
-        {
-          message:
-            "Classroom ID or code is required",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    // =========================
-    // NOT FOUND
-    // =========================
 
     if (!classroom) {
       return NextResponse.json(
@@ -99,6 +85,7 @@ export async function GET(request) {
     return NextResponse.json({
       classroom,
     });
+
   } catch (error) {
     console.error(
       "GET CLASSROOM ERROR:",
@@ -107,8 +94,7 @@ export async function GET(request) {
 
     return NextResponse.json(
       {
-        message:
-          "Failed to find classroom",
+        message: "Failed to fetch classroom",
       },
       {
         status: 500,

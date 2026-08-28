@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-
 import { getServerSession } from "next-auth";
 
 import { connectDB } from "../../../../lib/mongodb";
 import Classroom from "../../../../models/Classroom";
-
 import { authOptions } from "../../../../lib/auth";
 
 export async function POST(request) {
@@ -12,9 +10,7 @@ export async function POST(request) {
     await connectDB();
 
     const session =
-      await getServerSession(
-        authOptions
-      );
+      await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -27,10 +23,6 @@ export async function POST(request) {
         }
       );
     }
-
-    // =========================
-    // CODE
-    // =========================
 
     const { code } =
       await request.json();
@@ -51,13 +43,12 @@ export async function POST(request) {
       code.trim().toUpperCase();
 
     // =========================
-    // FIND PRIVATE CLASS
+    // FIND PUBLIC OR PRIVATE CLASS
     // =========================
 
     const classroom =
       await Classroom.findOne({
         code: classroomCode,
-        privacy: "private",
       });
 
     if (!classroom) {
@@ -72,12 +63,28 @@ export async function POST(request) {
       );
     }
 
-    // =========================
-    // CHECK MEMBER
-    // =========================
-
     const userId =
       session.user.id;
+
+    // =========================
+    // HOST CHECK
+    // =========================
+
+    const isHost =
+      classroom.host.toString() ===
+      userId.toString();
+
+    if (isHost) {
+      return NextResponse.json({
+        message:
+          "You are the host of this classroom",
+        classroom,
+      });
+    }
+
+    // =========================
+    // MEMBER CHECK
+    // =========================
 
     const alreadyMember =
       classroom.members.some(
@@ -95,7 +102,7 @@ export async function POST(request) {
     }
 
     // =========================
-    // ADD MEMBER
+    // JOIN CLASSROOM
     // =========================
 
     classroom.members.push(userId);
@@ -104,9 +111,10 @@ export async function POST(request) {
 
     return NextResponse.json({
       message:
-        "Successfully joined classroom",
-      classroom,
-    });
+        `Successfully joined ${classroom.privacy} classroom`,
+        classroom,
+      });
+
   } catch (error) {
     console.error(
       "JOIN CLASSROOM ERROR:",

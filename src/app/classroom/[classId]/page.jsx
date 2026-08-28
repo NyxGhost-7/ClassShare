@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-
+import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
   BookOpen,
@@ -15,26 +15,21 @@ import {
   Loader2,
 } from "lucide-react";
 
-import Navbar from "../../components/Navbar";
-import ResourceCard from "../../components/ResourceCard";
+import Navbar from "../../../components/Navbar";
+import ResourceCard from "../../../components/ResourceCard";
 
 export default function ClassroomPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
 
-  const classroomId = params.classroomId;
+  // Folder is [classId]
+  const classroomId = params.classId;
 
-  const [classroom, setClassroom] =
-    useState(null);
-
-  const [resources, setResources] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [copied, setCopied] =
-    useState(false);
+  const [classroom, setClassroom] = useState(null);
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (classroomId) {
@@ -46,48 +41,39 @@ export default function ClassroomPage() {
     try {
       setLoading(true);
 
-      // ============================
-      // LOAD CLASSROOM
-      // ============================
-
-      const classroomResponse =
-        await fetch(
-          `/api/classroom?id=${classroomId}`
-        );
+      const classroomResponse = await fetch(
+        `/api/classroom?id=${classroomId}`
+      );
 
       const classroomData =
         await classroomResponse.json();
 
       if (!classroomResponse.ok) {
-        alert(
+        console.error(
           classroomData.message ||
-            "Failed to load classroom"
+          "Failed to load classroom"
         );
 
+        setClassroom(null);
         return;
       }
 
-      setClassroom(
-        classroomData.classroom
+      setClassroom(classroomData.classroom);
+
+      const resourceResponse = await fetch(
+        `/api/resource?classroomId=${classroomId}`
       );
-
-      // ============================
-      // LOAD RESOURCES
-      // ============================
-
-      const resourceResponse =
-        await fetch(
-          `/api/resource?classroomId=${classroomId}`
-        );
 
       const resourceData =
         await resourceResponse.json();
 
       if (!resourceResponse.ok) {
         console.error(
-          resourceData.message
+          resourceData.message ||
+          "Failed to load resources"
         );
 
+        setResources([]);
         return;
       }
 
@@ -100,14 +86,12 @@ export default function ClassroomPage() {
         "CLASSROOM LOAD ERROR:",
         error
       );
+
+      setClassroom(null);
     } finally {
       setLoading(false);
     }
   };
-
-  // ============================
-  // COPY INVITE LINK
-  // ============================
 
   const copyLink = async () => {
     try {
@@ -132,10 +116,6 @@ export default function ClassroomPage() {
     }
   };
 
-  // ============================
-  // LOADING
-  // ============================
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black text-white">
@@ -155,10 +135,6 @@ export default function ClassroomPage() {
     );
   }
 
-  // ============================
-  // CLASSROOM NOT FOUND
-  // ============================
-
   if (!classroom) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black text-white">
@@ -169,8 +145,8 @@ export default function ClassroomPage() {
           </h1>
 
           <p className="mt-2 text-slate-500">
-            This classroom may have been
-            deleted or does not exist.
+            This classroom may have been deleted
+            or does not exist.
           </p>
 
           <button
@@ -194,8 +170,6 @@ export default function ClassroomPage() {
 
       <main className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
 
-        {/* ================= BACK ================= */}
-
         <button
           onClick={() =>
             router.push("/dashboard")
@@ -210,15 +184,13 @@ export default function ClassroomPage() {
           Back to Dashboard
         </button>
 
-        {/* ================= HEADER ================= */}
+        {/* CLASSROOM HEADER */}
 
-        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+        <section className="relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] p-6 sm:p-8">
 
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/[0.03] blur-[80px]" />
 
           <div className="relative flex flex-col justify-between gap-8 md:flex-row md:items-center">
-
-            {/* CLASSROOM INFO */}
 
             <div className="max-w-2xl">
 
@@ -258,8 +230,7 @@ export default function ClassroomPage() {
               </div>
 
               <p className="mt-4 font-mono text-2xl font-bold tracking-[0.15em] text-white">
-                {classroom.code ||
-                  "PRIVATE"}
+                {classroom.code || "PRIVATE"}
               </p>
 
               <button
@@ -288,7 +259,7 @@ export default function ClassroomPage() {
           </div>
         </section>
 
-        {/* ================= RESOURCES HEADER ================= */}
+        {/* RESOURCES */}
 
         <section className="mt-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
 
@@ -305,13 +276,10 @@ export default function ClassroomPage() {
             </h2>
 
             <p className="mt-2 text-slate-500">
-              Notes, documents, videos and useful
-              links — all in one place.
+              Notes, documents, videos and useful links — all in one place.
             </p>
 
           </div>
-
-          {/* ADD RESOURCE */}
 
           <button
             onClick={() =>
@@ -331,7 +299,7 @@ export default function ClassroomPage() {
 
         </section>
 
-        {/* ================= RESOURCE COUNT ================= */}
+        {/* RESOURCE COUNT */}
 
         {resources.length > 0 && (
           <div className="mt-8 flex items-center gap-3">
@@ -350,15 +318,13 @@ export default function ClassroomPage() {
           </div>
         )}
 
-        {/* ================= RESOURCES ================= */}
+        {/* RESOURCE LIST */}
 
         <section className="mt-8">
 
           {resources.length === 0 ? (
 
             <div className="relative overflow-hidden rounded-3xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-20 text-center">
-
-              <div className="absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 rounded-full bg-white/[0.03] blur-[80px]" />
 
               <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/5 text-slate-300">
                 <FolderOpen size={34} />
@@ -392,14 +358,25 @@ export default function ClassroomPage() {
 
             <div className="space-y-4">
 
-              {resources.map(
-                (resource) => (
-                  <ResourceCard
-                    key={resource._id}
+              {resources.map((resource) => (
+                <ResourceCard
+                   key={resource._id}
                     resource={resource}
-                  />
-                )
-              )}
+                    currentUserId={session?.user?.id}
+                    classroomHostId={
+                      classroom.host?._id ||
+                      classroom.host
+                    }
+                    onDelete={(resourceId) => {
+                      setResources((previous) =>
+                        previous.filter(
+                          (resource) =>
+                            resource._id !== resourceId
+                        )
+                      );
+                    }}
+                />
+              ))}
 
             </div>
 
