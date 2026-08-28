@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import Navbar from "../../components/Navbar";
-import ClassroomCard from "../../Components/ClassroomCard";
+import ClassroomCard from "../../components/ClassroomCard";
 
 export default function Dashboard() {
   const router = useRouter();
