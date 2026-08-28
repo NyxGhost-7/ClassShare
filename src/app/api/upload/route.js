@@ -16,8 +16,6 @@ export async function POST(request) {
     const description = formData.get("description");
     const classroomId = formData.get("classroomId");
 
- 
-
     if (!file || !title || !classroomId) {
       return NextResponse.json(
         {
@@ -29,8 +27,6 @@ export async function POST(request) {
         }
       );
     }
-
-    /* ================= CLASSROOM CHECK ================= */
 
     const classroom =
       await Classroom.findById(classroomId);
@@ -46,78 +42,145 @@ export async function POST(request) {
       );
     }
 
-    /* ================= FILE → BUFFER ================= */
 
-    const bytes = await file.arrayBuffer();
+    const fileName =
+      file.name.toLowerCase();
 
-    const buffer = Buffer.from(bytes);
+    const mimeType =
+      file.type.toLowerCase();
 
-    /* ================= CLOUDINARY UPLOAD ================= */
+    let type = "other";
 
-    const uploadResult = await new Promise(
-      (resolve, reject) => {
-        const uploadStream =
-          cloudinary.uploader.upload_stream(
-            {
-              resource_type: "auto",
-              folder: "classshare",
-            },
-            (error, result) => {
-              if (error) {
-                reject(error);
-              } else {
-                resolve(result);
-              }
-            }
-          );
-
-        uploadStream.end(buffer);
-      }
-    );
-
-    /* ================= DETECT FILE TYPE ================= */
-
-    const fileName = file.name.toLowerCase();
-
-    let type = "file";
-
-    if (fileName.endsWith(".pdf")) {
-      type = "pdf";
-    } else if (fileName.endsWith(".doc")) {
-      type = "doc";
-    } else if (fileName.endsWith(".docx")) {
-      type = "docx";
-    } else if (fileName.endsWith(".ppt")) {
-      type = "ppt";
-    } else if (fileName.endsWith(".pptx")) {
-      type = "pptx";
-    } else if (
-      fileName.endsWith(".jpg") ||
-      fileName.endsWith(".jpeg") ||
-      fileName.endsWith(".png")
+    if (
+      mimeType.startsWith("image/") ||
+      /\.(jpg|jpeg|png|webp|gif)$/i.test(
+        fileName
+      )
     ) {
       type = "image";
+    } else if (
+      mimeType.startsWith("video/") ||
+      /\.(mp4|webm|mov)$/i.test(
+        fileName
+      )
+    ) {
+      type = "video";
+    } else if (
+      fileName.endsWith(".pdf")
+    ) {
+      type = "pdf";
+    } else if (
+      fileName.endsWith(".doc")
+    ) {
+      type = "doc";
+    } else if (
+      fileName.endsWith(".docx")
+    ) {
+      type = "docx";
+    } else if (
+      fileName.endsWith(".ppt")
+    ) {
+      type = "ppt";
+    } else if (
+      fileName.endsWith(".pptx")
+    ) {
+      type = "pptx";
     }
 
-    /* ================= SAVE RESOURCE ================= */
 
-    const resource = await Resource.create({
-      title: title.trim(),
-      description: description?.trim() || "",
-      type,
+    let cloudinaryResourceType = "raw";
 
-      url: uploadResult.secure_url,
+    if (type === "image") {
+      cloudinaryResourceType = "image";
+    }
 
-      classroomId,
+    if (type === "video") {
+      cloudinaryResourceType = "video";
+    }
 
-      expiresAt: new Date(
-        Date.now() + 30 * 24 * 60 * 60 * 1000
-      ),
-    });
 
+    const bytes =
+      await file.arrayBuffer();
+
+    const buffer =
+      Buffer.from(bytes);
+console.log("🔥 NEW UPLOAD ROUTE IS RUNNING");
+
+    const uploadResult =
+      await new Promise(
+        (resolve, reject) => {
+          const uploadStream =
+            cloudinary.uploader.upload_stream(
+              {
+                resource_type:
+                  cloudinaryResourceType,
+
+                folder:
+                  "classshare/resources",
+
+                // Keep original filename
+                use_filename: true,
+
+                unique_filename: true,
+              },
+
+              (error, result) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve(result);
+                }
+              }
+            );
+
+          uploadStream.end(buffer);
+          console.log({
+  fileName: file.name,
+  mimeType: file.type,
+  type,
+  cloudinaryResourceType,
+});
+        }
+      );
+      console.log("🔥 NEW UPLOAD ROUTE IS RUNNING");
+
+    const resource =
+      await Resource.create({
+        title: title.trim(),
+
+        description:
+          description?.trim() || "",
+
+        type,
+
+        url:
+          uploadResult.secure_url,
+
+        classroomId,
+
+        size:
+          file.size,
+
+        expiresAt: new Date(
+          Date.now() +
+            30 *
+              24 *
+              60 *
+              60 *
+              1000
+        ),
+      });
+console.log("CLOUDINARY RESULT:", {
+  resource_type: result?.resource_type,
+  secure_url: result?.secure_url,
+  format: result?.format,
+});
     return NextResponse.json(
       {
-        message: "File uploaded successfully",
+        message:
+          "File uploaded successfully",
+          
+
         resource,
       },
       {
@@ -125,12 +188,18 @@ export async function POST(request) {
       }
     );
   } catch (error) {
-    console.error("UPLOAD ERROR:", error);
+    console.error(
+      "UPLOAD ERROR:",
+      error
+    );
 
     return NextResponse.json(
       {
-        message: "File upload failed",
-        error: error.message,
+        message:
+          "File upload failed",
+
+        error:
+          error.message,
       },
       {
         status: 500,

@@ -24,6 +24,10 @@ export default function ResourceCard({
 }) {
   const [deleting, setDeleting] = useState(false);
 
+ 
+  // RESOURCE ICONS
+  // =========================
+
   const iconMap = {
     pdf: {
       icon: FileText,
@@ -55,6 +59,26 @@ export default function ResourceCard({
       label: "IMAGE",
     },
 
+    jpg: {
+      icon: FileImage,
+      label: "JPG",
+    },
+
+    jpeg: {
+      icon: FileImage,
+      label: "JPEG",
+    },
+
+    png: {
+      icon: FileImage,
+      label: "PNG",
+    },
+
+    webp: {
+      icon: FileImage,
+      label: "WEBP",
+    },
+
     video: {
       icon: FileVideo,
       label: "VIDEO",
@@ -79,17 +103,12 @@ export default function ResourceCard({
 
   const Icon = config.icon;
 
-  // =========================
-  // PERMISSIONS
-  // =========================
-
   const uploadedById =
     resource.uploadedBy?._id?.toString() ||
     resource.uploadedBy?.toString();
 
   const isUploader =
-    currentUserId?.toString() ===
-    uploadedById;
+    currentUserId?.toString() === uploadedById;
 
   const isHost =
     currentUserId?.toString() ===
@@ -97,10 +116,6 @@ export default function ResourceCard({
 
   const canDelete =
     isUploader || isHost;
-
-  // =========================
-  // FORMAT FILE SIZE
-  // =========================
 
   const formatFileSize = (bytes) => {
     if (!bytes) return null;
@@ -138,9 +153,47 @@ export default function ResourceCard({
         )
       : null;
 
-  // =========================
-  // DELETE RESOURCE
-  // =========================
+  const downloadableTypes = [
+    "pdf",
+    "doc",
+    "docx",
+    "ppt",
+    "pptx",
+    "image",
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+  ];
+
+  const isDownloadable =
+    downloadableTypes.includes(type);
+
+  const getResourceUrl = () => {
+    if (!resource.url) return "";
+
+    const isCloudinaryUrl =
+      resource.url.includes(
+        "res.cloudinary.com"
+      );
+
+    // Force download only for Cloudinary files
+    if (
+      isDownloadable &&
+      isCloudinaryUrl
+    ) {
+      return resource.url.replace(
+        "/upload/",
+        "/upload/fl_attachment/"
+      );
+    }
+
+    return resource.url;
+  };
+
+  const resourceUrl =
+    getResourceUrl();
+
 
   const handleDelete = async () => {
     const confirmed =
@@ -173,11 +226,9 @@ export default function ResourceCard({
         return;
       }
 
-      // Update parent UI immediately
       if (onDelete) {
         onDelete(resource._id);
       }
-
     } catch (error) {
       console.error(
         "DELETE RESOURCE ERROR:",
@@ -187,7 +238,6 @@ export default function ResourceCard({
       alert(
         "Something went wrong while deleting the resource"
       );
-
     } finally {
       setDeleting(false);
     }
@@ -196,17 +246,17 @@ export default function ResourceCard({
   return (
     <div className="group relative flex flex-col gap-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-xl md:flex-row md:items-center md:justify-between">
 
-      {/* BACKGROUND GLOW */}
-
-      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-indigo-500/5 blur-[60px] transition group-hover:bg-indigo-500/10" />
-
       {/* RESOURCE INFO */}
 
       <div className="relative flex min-w-0 items-center gap-4">
 
+        {/* ICON */}
+
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-all duration-300 group-hover:scale-105 group-hover:bg-white/10 group-hover:text-white">
           <Icon size={22} />
         </div>
+
+        {/* DETAILS */}
 
         <div className="min-w-0">
 
@@ -261,30 +311,39 @@ export default function ResourceCard({
           </div>
 
         </div>
+
       </div>
 
       {/* ACTIONS */}
 
       <div className="relative flex shrink-0 gap-2">
 
-        {/* OPEN RESOURCE */}
+        {/* OPEN / DOWNLOAD */}
 
         {resource.url ? (
           <a
-            href={resource.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={resourceUrl}
+            target={
+              isDownloadable
+                ? undefined
+                : "_blank"
+            }
+            rel={
+              isDownloadable
+                ? undefined
+                : "noopener noreferrer"
+            }
             className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:text-black active:scale-[0.98]"
           >
-            {type === "link" ? (
+            {isDownloadable ? (
               <>
-                Open
-                <ExternalLink size={15} />
+                Download
+                <Download size={15} />
               </>
             ) : (
               <>
                 Open
-                <Download size={15} />
+                <ExternalLink size={15} />
               </>
             )}
           </a>
@@ -297,7 +356,7 @@ export default function ResourceCard({
           </button>
         )}
 
-        {/* DELETE RESOURCE */}
+        {/* DELETE */}
 
         {canDelete && (
           <button

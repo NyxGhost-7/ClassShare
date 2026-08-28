@@ -15,63 +15,83 @@ export const runtime = "nodejs";
 // ========================================
 
 function getResourceType(file) {
-  const name =
-    file.name.toLowerCase();
+  const fileName =
+    file.name?.toLowerCase() || "";
 
-  const extension =
-    name.split(".").pop();
+  const mimeType =
+    file.type?.toLowerCase() || "";
 
-  if (extension === "pdf") {
-    return "pdf";
-  }
-
+  // IMAGE
   if (
-    extension === "doc"
-  ) {
-    return "doc";
-  }
-
-  if (
-    extension === "docx"
-  ) {
-    return "docx";
-  }
-
-  if (
-    extension === "ppt"
-  ) {
-    return "ppt";
-  }
-
-  if (
-    extension === "pptx"
-  ) {
-    return "pptx";
-  }
-
-  if (
-    file.type.startsWith("image/")
+    mimeType.startsWith("image/") ||
+    /\.(jpg|jpeg|png|webp|gif)$/i.test(
+      fileName
+    )
   ) {
     return "image";
   }
 
+  // VIDEO
   if (
-    file.type.startsWith("video/")
+    mimeType.startsWith("video/") ||
+    /\.(mp4|webm|mov)$/i.test(
+      fileName
+    )
   ) {
     return "video";
+  }
+
+  // PDF
+  if (fileName.endsWith(".pdf")) {
+    return "pdf";
+  }
+
+  // DOCUMENTS
+  if (fileName.endsWith(".doc")) {
+    return "doc";
+  }
+
+  if (fileName.endsWith(".docx")) {
+    return "docx";
+  }
+
+  // PRESENTATIONS
+  if (fileName.endsWith(".ppt")) {
+    return "ppt";
+  }
+
+  if (fileName.endsWith(".pptx")) {
+    return "pptx";
   }
 
   return "other";
 }
 
 // ========================================
-// UPLOAD TO CLOUDINARY
+// CLOUDINARY UPLOAD
 // ========================================
 
 async function uploadToCloudinary(
   buffer,
   resourceType
 ) {
+  let cloudinaryResourceType = "raw";
+
+  // IMAGE
+  if (resourceType === "image") {
+    cloudinaryResourceType = "image";
+  }
+
+  // VIDEO
+  if (resourceType === "video") {
+    cloudinaryResourceType = "video";
+  }
+
+  console.log(
+    "CLOUDINARY RESOURCE TYPE:",
+    cloudinaryResourceType
+  );
+
   return new Promise(
     (resolve, reject) => {
       const uploadStream =
@@ -81,9 +101,11 @@ async function uploadToCloudinary(
               "classshare/resources",
 
             resource_type:
-              resourceType === "video"
-                ? "video"
-                : "raw",
+              cloudinaryResourceType,
+
+            use_filename: true,
+
+            unique_filename: true,
           },
 
           (error, result) => {
@@ -91,6 +113,23 @@ async function uploadToCloudinary(
               reject(error);
               return;
             }
+
+            console.log(
+              "CLOUDINARY UPLOAD RESULT:",
+              {
+                resource_type:
+                  result.resource_type,
+
+                secure_url:
+                  result.secure_url,
+
+                public_id:
+                  result.public_id,
+
+                format:
+                  result.format,
+              }
+            );
 
             resolve(result);
           }
@@ -206,7 +245,9 @@ export async function POST(request) {
       );
     }
 
-    // Convert File → Buffer
+    // ========================================
+    // CONVERT FILE → BUFFER
+    // ========================================
 
     const bytes =
       await file.arrayBuffer();
@@ -214,14 +255,35 @@ export async function POST(request) {
     const buffer =
       Buffer.from(bytes);
 
+    // ========================================
+    // DETECT FILE TYPE
+    // ========================================
+
     const type =
       getResourceType(file);
+
+    console.log(
+      "UPLOADING FILE:",
+      {
+        name: file.name,
+        mimeType: file.type,
+        detectedType: type,
+      }
+    );
+
+    // ========================================
+    // UPLOAD TO CLOUDINARY
+    // ========================================
 
     const uploadResult =
       await uploadToCloudinary(
         buffer,
         type
       );
+
+    // ========================================
+    // SAVE RESOURCE
+    // ========================================
 
     const resource =
       await Resource.create({
@@ -245,6 +307,9 @@ export async function POST(request) {
 
         uploadedBy:
           userId,
+
+        size:
+          file.size,
       });
 
     return NextResponse.json(
@@ -258,6 +323,7 @@ export async function POST(request) {
         status: 201,
       }
     );
+
   } catch (error) {
     console.error(
       "UPLOAD RESOURCE ERROR:",
@@ -268,6 +334,9 @@ export async function POST(request) {
       {
         message:
           "Failed to upload resource",
+
+        error:
+          error.message,
       },
       {
         status: 500,
