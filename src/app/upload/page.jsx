@@ -1,7 +1,7 @@
 "use client";
 
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
 
 import {
   ArrowLeft,
@@ -14,12 +14,9 @@ import {
 
 import Navbar from "../../components/Navbar";
 
-export default function UploadPage() {
-  const searchParams =
-    useSearchParams();
-
-  const router =
-    useRouter();
+function UploadContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const classroomId =
     searchParams.get("classroomId");
@@ -45,143 +42,122 @@ export default function UploadPage() {
   const [error, setError] =
     useState("");
 
-  const handleSubmit =
-    async (event) => {
-      event.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-      setError("");
+    setError("");
 
-      if (!classroomId) {
-        setError(
-          "Invalid classroom"
-        );
+    if (!classroomId) {
+      setError("Invalid classroom");
+      return;
+    }
 
-        return;
-      }
+    try {
+      setLoading(true);
 
-      try {
-        setLoading(true);
+      // =====================
+      // UPLOAD FILE
+      // =====================
 
-        // =====================
-        // UPLOAD FILE
-        // =====================
-
-        if (mode === "file") {
-          if (!file) {
-            setError(
-              "Please select a file"
-            );
-
-            setLoading(false);
-
-            return;
-          }
-
-          const formData =
-            new FormData();
-
-          formData.append(
-            "file",
-            file
-          );
-
-          formData.append(
-            "title",
-            title
-          );
-
-          formData.append(
-            "description",
-            description
-          );
-
-          formData.append(
-            "classroomId",
-            classroomId
-          );
-
-          const response =
-            await fetch(
-              "/api/resource/upload",
-              {
-                method: "POST",
-                body: formData,
-              }
-            );
-
-          const data =
-            await response.json();
-
-          if (!response.ok) {
-            throw new Error(
-              data.message ||
-                "Upload failed"
-            );
-          }
+      if (mode === "file") {
+        if (!file) {
+          setError("Please select a file");
+          return;
         }
 
-        // =====================
-        // ADD LINK
-        // =====================
+        const formData = new FormData();
 
-        else {
-          const response =
-            await fetch(
-              "/api/resource",
-              {
-                method: "POST",
+        formData.append("file", file);
+        formData.append("title", title);
+        formData.append(
+          "description",
+          description
+        );
+        formData.append(
+          "classroomId",
+          classroomId
+        );
 
-                headers: {
-                  "Content-Type":
-                    "application/json",
-                },
-
-                body: JSON.stringify({
-                  title,
-                  description,
-                  url,
-                  classroomId,
-                }),
-              }
-            );
-
-          const data =
-            await response.json();
-
-          if (!response.ok) {
-            throw new Error(
-              data.message ||
-                "Failed to add link"
-            );
+        const response = await fetch(
+          "/api/resource/upload",
+          {
+            method: "POST",
+            body: formData,
           }
+        );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Upload failed"
+          );
         }
-
-        router.push(
-          `/classroom/${classroomId}`
-        );
-
-        router.refresh();
-      } catch (error) {
-        console.error(error);
-
-        setError(
-          error.message ||
-            "Something went wrong"
-        );
-      } finally {
-        setLoading(false);
       }
-    };
+
+      // =====================
+      // ADD LINK
+      // =====================
+
+      else {
+        const response = await fetch(
+          "/api/resource",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              title,
+              description,
+              url,
+              classroomId,
+            }),
+          }
+        );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to add link"
+          );
+        }
+      }
+
+      router.push(
+        `/classroom/${classroomId}`
+      );
+
+      router.refresh();
+
+    } catch (error) {
+      console.error(error);
+
+      setError(
+        error.message ||
+          "Something went wrong"
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
 
       <main className="mx-auto max-w-2xl px-6 py-10">
+
         <button
-          onClick={() =>
-            router.back()
-          }
+          onClick={() => router.back()}
           className="mb-8 flex items-center gap-2 text-sm text-slate-400 hover:text-white"
         >
           <ArrowLeft size={17} />
@@ -190,6 +166,7 @@ export default function UploadPage() {
         </button>
 
         <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-white">
             <Upload size={24} />
           </div>
@@ -205,6 +182,7 @@ export default function UploadPage() {
           {/* MODE */}
 
           <div className="mt-8 grid grid-cols-2 gap-3">
+
             <button
               type="button"
               onClick={() =>
@@ -217,7 +195,6 @@ export default function UploadPage() {
               }`}
             >
               <FileUp size={17} />
-
               Upload File
             </button>
 
@@ -233,15 +210,16 @@ export default function UploadPage() {
               }`}
             >
               <LinkIcon size={17} />
-
               Add Link
             </button>
+
           </div>
 
           <form
             onSubmit={handleSubmit}
             className="mt-8 space-y-5"
           >
+
             {/* TITLE */}
 
             <div>
@@ -252,9 +230,7 @@ export default function UploadPage() {
               <input
                 value={title}
                 onChange={(event) =>
-                  setTitle(
-                    event.target.value
-                  )
+                  setTitle(event.target.value)
                 }
                 placeholder="Example: DBMS Unit 1 Notes"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none transition focus:border-white/30"
@@ -285,11 +261,13 @@ export default function UploadPage() {
 
             {mode === "file" && (
               <div>
+
                 <label className="mb-2 block text-sm font-medium">
                   Select File
                 </label>
 
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/[0.03] px-6 py-10 text-center transition hover:bg-white/[0.06]">
+
                   <FileText
                     size={32}
                     className="text-slate-400"
@@ -315,7 +293,9 @@ export default function UploadPage() {
                       )
                     }
                   />
+
                 </label>
+
               </div>
             )}
 
@@ -323,6 +303,7 @@ export default function UploadPage() {
 
             {mode === "link" && (
               <div>
+
                 <label className="mb-2 block text-sm font-medium">
                   Resource URL
                 </label>
@@ -331,14 +312,13 @@ export default function UploadPage() {
                   type="url"
                   value={url}
                   onChange={(event) =>
-                    setUrl(
-                      event.target.value
-                    )
+                    setUrl(event.target.value)
                   }
                   placeholder="https://example.com"
                   required
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none transition focus:border-white/30"
                 />
+
               </div>
             )}
 
@@ -374,9 +354,31 @@ export default function UploadPage() {
                 </>
               )}
             </button>
+
           </form>
+
         </div>
       </main>
     </div>
+  );
+}
+
+export default function UploadPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-black text-white">
+          <div className="flex items-center gap-3 text-slate-400">
+            <Loader2
+              size={22}
+              className="animate-spin"
+            />
+            Loading upload page...
+          </div>
+        </div>
+      }
+    >
+      <UploadContent />
+    </Suspense>
   );
 }

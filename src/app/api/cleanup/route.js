@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { connectDB } from "../../../lib/mongodb";
-import Resource from "../../../models/Resources";
+import Resource from "../../../models/Resource";
 import cloudinary from "../../../lib/cloudinary";
 
 export async function GET(request) {
