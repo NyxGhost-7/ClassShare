@@ -170,26 +170,28 @@ export default function ResourceCard({
     downloadableTypes.includes(type);
 
   const getResourceUrl = () => {
-    if (!resource.url) return "";
+  if (!resource.url) return "";
 
-    const isCloudinaryUrl =
-      resource.url.includes(
-        "res.cloudinary.com"
-      );
+  const isCloudinaryUrl =
+    resource.url.includes("res.cloudinary.com");
 
-    // Force download only for Cloudinary files
-    if (
-      isDownloadable &&
-      isCloudinaryUrl
-    ) {
-      return resource.url.replace(
-        "/upload/",
-        "/upload/fl_attachment/"
-      );
-    }
-
+  if (!isDownloadable || !isCloudinaryUrl) {
     return resource.url;
-  };
+  }
+
+  const fileName =
+    resource.originalName ||
+    resource.title ||
+    "download";
+
+  const encodedFileName =
+    encodeURIComponent(fileName);
+
+  return resource.url.replace(
+    "/upload/",
+    `/upload/fl_attachment:${encodedFileName}/`
+  );
+};
 
   const resourceUrl =
     getResourceUrl();

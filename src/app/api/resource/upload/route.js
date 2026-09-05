@@ -10,9 +10,6 @@ import cloudinary from "../../../../lib/cloudinary";
 
 export const runtime = "nodejs";
 
-// ========================================
-// DETECT FILE TYPE
-// ========================================
 
 function getResourceType(file) {
   const fileName =
@@ -66,11 +63,6 @@ function getResourceType(file) {
 
   return "other";
 }
-
-// ========================================
-// CLOUDINARY UPLOAD
-// ========================================
-
 async function uploadToCloudinary(
   buffer,
   resourceType
@@ -92,57 +84,50 @@ async function uploadToCloudinary(
     cloudinaryResourceType
   );
 
-  return new Promise(
-    (resolve, reject) => {
-      const uploadStream =
-        cloudinary.uploader.upload_stream(
-          {
-            folder:
-              "classshare/resources",
+  return new Promise((resolve, reject) => {
+    const uploadStream =
+      cloudinary.uploader.upload_stream(
+        {
+          folder: "classshare/resources",
 
-            resource_type:
-              cloudinaryResourceType,
+          resource_type:
+            cloudinaryResourceType,
 
-            use_filename: true,
+          use_filename: true,
+          unique_filename: true,
+        },
 
-            unique_filename: true,
-          },
-
-          (error, result) => {
-            if (error) {
-              reject(error);
-              return;
-            }
-
-            console.log(
-              "CLOUDINARY UPLOAD RESULT:",
-              {
-                resource_type:
-                  result.resource_type,
-
-                secure_url:
-                  result.secure_url,
-
-                public_id:
-                  result.public_id,
-
-                format:
-                  result.format,
-              }
-            );
-
-            resolve(result);
+        (error, result) => {
+          if (error) {
+            reject(error);
+            return;
           }
-        );
 
-      uploadStream.end(buffer);
-    }
-  );
+          console.log(
+            "CLOUDINARY UPLOAD RESULT:",
+            {
+              resource_type:
+                result.resource_type,
+
+              secure_url:
+                result.secure_url,
+
+              public_id:
+                result.public_id,
+
+              format:
+                result.format,
+            }
+          );
+
+          resolve(result);
+        }
+      );
+
+    uploadStream.end(buffer);
+  });
 }
 
-// ========================================
-// POST FILE
-// ========================================
 
 export async function POST(request) {
   try {
@@ -245,19 +230,11 @@ export async function POST(request) {
       );
     }
 
-    // ========================================
-    // CONVERT FILE → BUFFER
-    // ========================================
-
     const bytes =
       await file.arrayBuffer();
 
     const buffer =
       Buffer.from(bytes);
-
-    // ========================================
-    // DETECT FILE TYPE
-    // ========================================
 
     const type =
       getResourceType(file);
@@ -271,46 +248,44 @@ export async function POST(request) {
       }
     );
 
-    // ========================================
-    // UPLOAD TO CLOUDINARY
-    // ========================================
-
     const uploadResult =
       await uploadToCloudinary(
         buffer,
         type
       );
 
-    // ========================================
-    // SAVE RESOURCE
-    // ========================================
+  const resource =
+  await Resource.create({
+    title:
+      title?.trim() ||
+      file.name,
 
-    const resource =
-      await Resource.create({
-        title:
-          title?.trim() ||
-          file.name,
+    description:
+      description?.trim() || "",
 
-        description:
-          description?.trim() || "",
+    type,
 
-        type,
+    url:
+      uploadResult.secure_url,
 
-        url:
-          uploadResult.secure_url,
+    publicId:
+      uploadResult.public_id,
 
-        publicId:
-          uploadResult.public_id,
+    originalName:
+      file.name,
 
-        classroom:
-          classroomId,
+    resourceType:
+      uploadResult.resource_type,
 
-        uploadedBy:
-          userId,
+    classroom:
+      classroomId,
 
-        size:
-          file.size,
-      });
+    uploadedBy:
+      userId,
+
+    size:
+      file.size,
+  });
 
     return NextResponse.json(
       {

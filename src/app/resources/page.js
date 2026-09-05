@@ -73,7 +73,7 @@ export default function ResourcesPage() {
     }
   };
 
-  /* ================= FILTER ================= */
+
 
   const filteredResources = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -96,7 +96,6 @@ export default function ResourcesPage() {
     });
   }, [resources, search, filter]);
 
-  /* ================= FILTERS ================= */
 
   const filters = [
     {

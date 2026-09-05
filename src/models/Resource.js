@@ -35,6 +35,20 @@ const ResourceSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Original filename
+    // Example: "Operating Systems Notes.pdf"
+    originalName: {
+      type: String,
+      default: null,
+    },
+
+    // Cloudinary resource type
+    // image / video / raw
+    resourceType: {
+      type: String,
+      default: "raw",
+    },
+
     // Cloudinary public_id
     // Required for deleting uploaded files
     publicId: {
