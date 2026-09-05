@@ -93,7 +93,7 @@ export default function LoginForm() {
         </h1>
 
         <p className="mt-2 text-sm text-gray-500">
-          Login to continue to ClassShare
+          Login to continue to <Link href={"/"} ><span className="font-bold">ClassShare</span></Link>
         </p>
 
       </div>
