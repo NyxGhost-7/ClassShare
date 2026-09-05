@@ -13,7 +13,7 @@ const ClassroomSchema = new mongoose.Schema(
       default: "",
     },
 
-    /* HOST */
+    
 
     host: {
       type: mongoose.Schema.Types.ObjectId,

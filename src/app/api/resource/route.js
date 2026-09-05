@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-
 import { connectDB } from "../../../lib/mongodb";
 import { authOptions } from "../../../lib/auth";
-
 import Resource from "../../../models/Resource";
 import Classroom from "../../../models/Classroom";
-
 import cloudinary from "../../../lib/cloudinary";
-
-
-// ========================================
-// GET RESOURCES
-// ========================================
 
 export async function GET(request) {
   try {
@@ -71,24 +63,10 @@ export async function GET(request) {
   }
 }
 
-
-// ========================================
-// DELETE RESOURCE
-// ========================================
-
 export async function DELETE(request) {
   try {
 
-    // =========================
-    // DATABASE
-    // =========================
-
     await connectDB();
-
-
-    // =========================
-    // AUTHENTICATION
-    // =========================
 
     const session =
       await getServerSession(
@@ -106,11 +84,6 @@ export async function DELETE(request) {
         }
       );
     }
-
-
-    // =========================
-    // RESOURCE ID
-    // =========================
 
     const { searchParams } =
       new URL(request.url);
@@ -131,10 +104,6 @@ export async function DELETE(request) {
     }
 
 
-    // =========================
-    // FIND RESOURCE
-    // =========================
-
     const resource =
       await Resource.findById(
         resourceId
@@ -153,10 +122,6 @@ export async function DELETE(request) {
     }
 
 
-    // =========================
-    // FIND CLASSROOM
-    // =========================
-
     const classroom =
       await Classroom.findById(
         resource.classroom
@@ -174,10 +139,6 @@ export async function DELETE(request) {
       );
     }
 
-
-    // =========================
-    // PERMISSION CHECK
-    // =========================
 
     const userId =
       session.user.id.toString();
@@ -204,16 +165,6 @@ export async function DELETE(request) {
     }
 
 
-    // =========================
-    // DELETE FROM CLOUDINARY
-    // =========================
-
-    /*
-      Links are not stored in Cloudinary.
-
-      Only uploaded files have publicId.
-    */
-
     if (resource.publicId) {
       try {
 
@@ -233,13 +184,6 @@ export async function DELETE(request) {
           cloudinaryError
         );
 
-        /*
-          We do NOT immediately stop here.
-
-          Sometimes the Cloudinary file
-          might already be deleted but the
-          MongoDB record still exists.
-        */
       }
     }
 

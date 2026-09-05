@@ -63,17 +63,8 @@ export async function POST(request) {
       );
     }
 
-    const userId =
-      session.user.id;
-
-    // =========================
-    // HOST CHECK
-    // =========================
-
-    const isHost =
-      classroom.host.toString() ===
-      userId.toString();
-
+    const userId = session.user.id;
+    const isHost =classroom.host.toString() ===userId.toString();
     if (isHost) {
       return NextResponse.json({
         message:
@@ -81,10 +72,6 @@ export async function POST(request) {
         classroom,
       });
     }
-
-    // =========================
-    // MEMBER CHECK
-    // =========================
 
     const alreadyMember =
       classroom.members.some(
@@ -100,10 +87,6 @@ export async function POST(request) {
         classroom,
       });
     }
-
-    // =========================
-    // JOIN CLASSROOM
-    // =========================
 
     classroom.members.push(userId);
 

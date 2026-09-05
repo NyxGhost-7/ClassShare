@@ -363,19 +363,8 @@ export default function ClassroomPage() {
                    key={resource._id}
                     resource={resource}
                     currentUserId={session?.user?.id}
-                    classroomHostId={
-                      classroom.host?._id ||
-                      classroom.host
-                    }
-                    onDelete={(resourceId) => {
-                      setResources((previous) =>
-                        previous.filter(
-                          (resource) =>
-                            resource._id !== resourceId
-                        )
-                      );
-                    }}
-                />
+                    classroomHostId={classroom.host?._id || classroom.host}
+                    onDelete={(resourceId) => {setResources((previous) => previous.filter( (resource) =>resource._id !== resourceId) ); }}/>
               ))}
 
             </div>

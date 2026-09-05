@@ -3,20 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
-import {
-  Plus,
-  LogIn,
-  Users,
-  BookOpen,
-  X,
-  Hash,
-  ArrowRight,
-  GraduationCap,
-  Globe,
-  Lock,
-} from "lucide-react";
-
+import {Plus,LogIn, Users, BookOpen, X, Hash,  ArrowRight, GraduationCap, Globe,Lock,} from "lucide-react";
 import Navbar from "../../components/Navbar";
 import ClassroomCard from "../../components/ClassroomCard";
 
