@@ -168,85 +168,14 @@ export default function Home() {
 
         </div>
 
-        {/* FEATURE CARDS */}
-
-        <div className="mt-20 grid w-full max-w-5xl grid-cols-2 gap-4 md:grid-cols-4">
-
-          <FeatureCard
-            icon={<FileText size={22} />}
-            title="Notes"
-            text="Share study material"
-          />
-
-          <FeatureCard
-            icon={<Video size={22} />}
-            title="Videos"
-            text="Learn visually"
-          />
-
-          <FeatureCard
-            icon={<LinkIcon size={22} />}
-            title="Resources"
-            text="Useful links"
-          />
-
-          <FeatureCard
-            icon={<Users size={22} />}
-            title="Classrooms"
-            text="Learn together"
-          />
-
-        </div>
-
-        {/* DASHBOARD PREVIEW */}
+        
 
         <div className="relative mt-16 w-full max-w-4xl">
 
-          <div className="absolute -left-8 top-10 hidden rotate-[-8deg] rounded-2xl border border-white/10 bg-white/5 p-4 text-left backdrop-blur-xl lg:block">
+      
 
-            <BookOpen
-              className="mb-2 text-indigo-400"
-              size={22}
-            />
 
-            <p className="text-sm font-semibold">
-              DBMS Notes
-            </p>
-
-            <p className="text-xs text-white/40">
-              Added just now
-            </p>
-
-          </div>
-
-          <div className="absolute -right-8 top-20 hidden rotate-[8deg] rounded-2xl border border-white/10 bg-white/5 p-4 text-left backdrop-blur-xl lg:block">
-
-            <Users
-              className="mb-2 text-purple-400"
-              size={22}
-            />
-
-            <p className="text-sm font-semibold">
-              42 Members
-            </p>
-
-            <p className="text-xs text-white/40">
-              Computer Science
-            </p>
-
-          </div>
-
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl backdrop-blur-2xl">
-
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-
-              <div className="flex items-center gap-3">
-
-                <div className="h-3 w-3 rounded-full bg-red-400" />
-
-                <div className="h-3 w-3 rounded-full bg-yellow-400" />
-
-                <div className="h-3 w-3 rounded-full bg-green-400" />
+         
 
               </div>
 
@@ -256,24 +185,7 @@ export default function Home() {
 
             </div>
 
-            <div className="grid grid-cols-1 gap-4 pt-5 md:grid-cols-3">
-
-              <DashboardItem
-                title="Data Structures"
-                files="12 resources"
-              />
-
-              <DashboardItem
-                title="Operating Systems"
-                files="8 resources"
-              />
-
-              <DashboardItem
-                title="Machine Learning"
-                files="15 resources"
-              />
-
-            </div>
+          
 
           </div>
 
