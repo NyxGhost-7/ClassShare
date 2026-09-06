@@ -1,128 +1,123 @@
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { connectDB } from "../../../../lib/mongodb";
-import Resource from "../../../../models/Resource";
-import Classroom from "../../../../models/Classroom";
-
 import { authOptions } from "../../../../lib/auth";
 import cloudinary from "../../../../lib/cloudinary";
 
+import Resource from "../../../../models/Resource";
+import Classroom from "../../../../models/Classroom";
+
 export const runtime = "nodejs";
 
-
 function getResourceType(file) {
-  const fileName =
-    file.name?.toLowerCase() || "";
+  const fileName = file.name?.toLowerCase() || "";
+  const mimeType = file.type?.toLowerCase() || "";
 
-  const mimeType =
-    file.type?.toLowerCase() || "";
-
-  // IMAGE
   if (
     mimeType.startsWith("image/") ||
-    /\.(jpg|jpeg|png|webp|gif)$/i.test(
-      fileName
-    )
+    /\.(jpg|jpeg|png|webp|gif)$/i.test(fileName)
   ) {
     return "image";
   }
 
-  // VIDEO
   if (
     mimeType.startsWith("video/") ||
-    /\.(mp4|webm|mov)$/i.test(
-      fileName
-    )
+    /\.(mp4|webm|mov|mkv)$/i.test(fileName)
   ) {
     return "video";
   }
 
-  // PDF
-  if (fileName.endsWith(".pdf")) {
-    return "pdf";
-  }
-
-  // DOCUMENTS
-  if (fileName.endsWith(".doc")) {
-    return "doc";
-  }
-
-  if (fileName.endsWith(".docx")) {
-    return "docx";
-  }
-
-  // PRESENTATIONS
-  if (fileName.endsWith(".ppt")) {
-    return "ppt";
-  }
-
-  if (fileName.endsWith(".pptx")) {
-    return "pptx";
-  }
+  if (fileName.endsWith(".pdf")) return "pdf";
+  if (fileName.endsWith(".doc")) return "doc";
+  if (fileName.endsWith(".docx")) return "docx";
+  if (fileName.endsWith(".ppt")) return "ppt";
+  if (fileName.endsWith(".pptx")) return "pptx";
 
   return "other";
 }
+function createPublicId(fileName) {
+  const extension = fileName.includes(".")
+    ? "." + fileName.split(".").pop().toLowerCase()
+    : "";
+
+  const baseName = fileName
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[^a-zA-Z0-9-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return `${baseName || "file"}-${Date.now()}${extension}`;
+}
+
+
 async function uploadToCloudinary(
   buffer,
-  resourceType
+  resourceType,
+  originalFileName
 ) {
+
+
+
   let cloudinaryResourceType = "raw";
 
-  // IMAGE
   if (resourceType === "image") {
     cloudinaryResourceType = "image";
-  }
-
-  // VIDEO
-  if (resourceType === "video") {
+  } else if (resourceType === "video") {
     cloudinaryResourceType = "video";
   }
 
-  console.log(
-    "CLOUDINARY RESOURCE TYPE:",
-    cloudinaryResourceType
-  );
+  let publicId;
+
+  if (cloudinaryResourceType === "raw") {
+    publicId = createPublicId(originalFileName);
+  }
+
+  console.log("CLOUDINARY UPLOAD:", {
+    detectedType: resourceType,
+    cloudinaryResourceType,
+    publicId,
+  });
 
   return new Promise((resolve, reject) => {
-    const uploadStream =
-      cloudinary.uploader.upload_stream(
-        {
-          folder: "classshare/resources",
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "classshare/resources",
 
-          resource_type:
-            cloudinaryResourceType,
+        resource_type: cloudinaryResourceType,
 
-          use_filename: true,
-          unique_filename: true,
-        },
+        ...(publicId && {
+          public_id: publicId,
+        }),
+        use_filename: cloudinaryResourceType !== "raw",
+        unique_filename: cloudinaryResourceType !== "raw",
+      },
 
-        (error, result) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-
-          console.log(
-            "CLOUDINARY UPLOAD RESULT:",
-            {
-              resource_type:
-                result.resource_type,
-
-              secure_url:
-                result.secure_url,
-
-              public_id:
-                result.public_id,
-
-              format:
-                result.format,
-            }
+      (error, result) => {
+        if (error) {
+          console.error(
+            "CLOUDINARY UPLOAD ERROR:",
+            error
           );
 
-          resolve(result);
+          reject(error);
+          return;
         }
-      );
+
+        console.log(
+          "CLOUDINARY UPLOAD SUCCESS:",
+          {
+            resource_type: result.resource_type,
+            secure_url: result.secure_url,
+            public_id: result.public_id,
+            format: result.format,
+          }
+        );
+
+        resolve(result);
+      }
+    );
 
     uploadStream.end(buffer);
   });
@@ -131,14 +126,16 @@ async function uploadToCloudinary(
 
 export async function POST(request) {
   try {
+    await connectDB();
+
+
     const session =
       await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json(
         {
-          message:
-            "You must be logged in",
+          message: "Unauthorized",
         },
         {
           status: 401,
@@ -146,28 +143,32 @@ export async function POST(request) {
       );
     }
 
-    await connectDB();
 
     const formData =
       await request.formData();
 
-    const file =
-      formData.get("file");
-
-    const title =
-      formData.get("title");
-
+    const file = formData.get("file");
+    const title = formData.get("title");
     const description =
-      formData.get("description");
-
+      formData.get("description") || "";
     const classroomId =
       formData.get("classroomId");
 
     if (!file) {
       return NextResponse.json(
         {
-          message:
-            "File is required",
+          message: "File is required",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!title?.trim()) {
+      return NextResponse.json(
+        {
+          message: "Title is required",
         },
         {
           status: 400,
@@ -178,8 +179,7 @@ export async function POST(request) {
     if (!classroomId) {
       return NextResponse.json(
         {
-          message:
-            "Classroom ID is required",
+          message: "Classroom ID is required",
         },
         {
           status: 400,
@@ -187,16 +187,30 @@ export async function POST(request) {
       );
     }
 
-    const classroom =
-      await Classroom.findById(
-        classroomId
+
+    const MAX_FILE_SIZE =
+      10 * 1024 * 1024;
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        {
+          message:
+            "File size must be less than 10MB",
+        },
+        {
+          status: 400,
+        }
       );
+    }
+
+ 
+    const classroom =
+      await Classroom.findById(classroomId);
 
     if (!classroom) {
       return NextResponse.json(
         {
-          message:
-            "Classroom not found",
+          message: "Classroom not found",
         },
         {
           status: 404,
@@ -204,25 +218,24 @@ export async function POST(request) {
       );
     }
 
+
     const userId =
-      session.user.id;
+      session.user.id.toString();
 
     const isHost =
-      classroom.host.toString() ===
-      userId.toString();
+      classroom.host?.toString() === userId;
 
     const isMember =
-      classroom.members.some(
+      classroom.members?.some(
         (member) =>
-          member.toString() ===
-          userId.toString()
+          member.toString() === userId
       );
 
     if (!isHost && !isMember) {
       return NextResponse.json(
         {
           message:
-            "You are not allowed to upload here",
+            "You are not allowed to upload resources",
         },
         {
           status: 403,
@@ -230,67 +243,114 @@ export async function POST(request) {
       );
     }
 
+    const type =
+      getResourceType(file);
+
+    console.log(
+      "UPLOAD DETAILS:",
+      {
+        fileName: file.name,
+        mimeType: file.type,
+        detectedType: type,
+        size: file.size,
+      }
+    );
+
+
     const bytes =
       await file.arrayBuffer();
 
     const buffer =
       Buffer.from(bytes);
 
-    const type =
-      getResourceType(file);
-
-    console.log(
-      "UPLOADING FILE:",
-      {
-        name: file.name,
-        mimeType: file.type,
-        detectedType: type,
-      }
-    );
 
     const uploadResult =
       await uploadToCloudinary(
         buffer,
-        type
+        type,
+        file.name
       );
 
-  const resource =
-  await Resource.create({
-    title:
-      title?.trim() ||
-      file.name,
+    if (
+      !uploadResult?.secure_url ||
+      !uploadResult?.public_id
+    ) {
+      console.error(
+        "INVALID CLOUDINARY RESPONSE:",
+        uploadResult
+      );
 
-    description:
-      description?.trim() || "",
+      return NextResponse.json(
+        {
+          message:
+            "Cloudinary upload completed but returned invalid file information",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
 
-    type,
+    const resource =
+      await Resource.create({
+        title: title.trim(),
 
-    url:
-      uploadResult.secure_url,
+        description:
+          description.trim(),
 
-    publicId:
-      uploadResult.public_id,
+        type,
 
-    originalName:
-      file.name,
+        url:
+          uploadResult.secure_url,
 
-    resourceType:
-      uploadResult.resource_type,
+        publicId:
+          uploadResult.public_id,
 
-    classroom:
-      classroomId,
+        resourceType:
+          uploadResult.resource_type,
 
-    uploadedBy:
-      userId,
+        originalName:
+          file.name,
 
-    size:
-      file.size,
-  });
+        classroom:
+          classroomId,
+
+        uploadedBy:
+          userId,
+
+        size:
+          file.size,
+
+        expiresAt:
+          new Date(
+            Date.now() +
+            30 *
+            24 *
+            60 *
+            60 *
+            1000
+          ),
+      });
+
+    console.log(
+      "RESOURCE CREATED:",
+      {
+        id: resource._id,
+        title: resource.title,
+        type: resource.type,
+        originalName:
+          resource.originalName,
+        publicId:
+          resource.publicId,
+        resourceType:
+          resource.resourceType,
+      }
+    );
 
     return NextResponse.json(
       {
         message:
-          "Resource uploaded successfully",
+          "File uploaded successfully",
 
         resource,
       },
@@ -298,7 +358,6 @@ export async function POST(request) {
         status: 201,
       }
     );
-
   } catch (error) {
     console.error(
       "UPLOAD RESOURCE ERROR:",
@@ -308,10 +367,8 @@ export async function POST(request) {
     return NextResponse.json(
       {
         message:
-          "Failed to upload resource",
-
-        error:
-          error.message,
+          error.message ||
+          "Upload failed",
       },
       {
         status: 500,

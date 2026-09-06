@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -24,9 +25,6 @@ export default function ResourceCard({
 }) {
   const [deleting, setDeleting] = useState(false);
 
- 
-  // RESOURCE ICONS
-  // =========================
 
   const iconMap = {
     pdf: {
@@ -96,19 +94,21 @@ export default function ResourceCard({
   };
 
   const type =
-    resource.type?.toLowerCase() || "other";
+    resource?.type?.toLowerCase() || "other";
 
   const config =
     iconMap[type] || iconMap.other;
 
   const Icon = config.icon;
 
+
   const uploadedById =
-    resource.uploadedBy?._id?.toString() ||
-    resource.uploadedBy?.toString();
+    resource?.uploadedBy?._id?.toString() ||
+    resource?.uploadedBy?.toString();
 
   const isUploader =
-    currentUserId?.toString() === uploadedById;
+    currentUserId?.toString() ===
+    uploadedById;
 
   const isHost =
     currentUserId?.toString() ===
@@ -117,8 +117,11 @@ export default function ResourceCard({
   const canDelete =
     isUploader || isHost;
 
+
   const formatFileSize = (bytes) => {
-    if (!bytes) return null;
+    if (!bytes || bytes <= 0) {
+      return null;
+    }
 
     const sizes = [
       "Bytes",
@@ -137,10 +140,10 @@ export default function ResourceCard({
   };
 
   const formattedSize =
-    formatFileSize(resource.size);
+    formatFileSize(resource?.size);
 
   const formattedDate =
-    resource.createdAt
+    resource?.createdAt
       ? new Date(
           resource.createdAt
         ).toLocaleDateString(
@@ -169,41 +172,29 @@ export default function ResourceCard({
   const isDownloadable =
     downloadableTypes.includes(type);
 
-  const getResourceUrl = () => {
-  if (!resource.url) return "";
 
-  const isCloudinaryUrl =
-    resource.url.includes("res.cloudinary.com");
-
-  if (!isDownloadable || !isCloudinaryUrl) {
-    return resource.url;
+const getResourceUrl = () => {
+  if (!resource?._id) {
+    return "";
   }
 
-  const fileName =
-    resource.originalName ||
-    resource.title ||
-    "download";
-
-  const encodedFileName =
-    encodeURIComponent(fileName);
-
-  return resource.url.replace(
-    "/upload/",
-    `/upload/fl_attachment:${encodedFileName}/`
-  );
+  return `/api/resource/file?id=${encodeURIComponent(
+    resource._id
+  )}`;
 };
 
-  const resourceUrl =
-    getResourceUrl();
+const resourceUrl = getResourceUrl();
 
-
+  
   const handleDelete = async () => {
     const confirmed =
       window.confirm(
         `Delete "${resource.title}"? This cannot be undone.`
       );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     try {
       setDeleting(true);
@@ -245,10 +236,11 @@ export default function ResourceCard({
     }
   };
 
+  
   return (
     <div className="group relative flex flex-col gap-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-xl md:flex-row md:items-center md:justify-between">
 
-      {/* RESOURCE INFO */}
+  
 
       <div className="relative flex min-w-0 items-center gap-4">
 
@@ -265,7 +257,7 @@ export default function ResourceCard({
           <div className="flex items-center gap-2">
 
             <h3 className="truncate font-bold text-white">
-              {resource.title}
+              {resource?.title || "Untitled"}
             </h3>
 
             <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -274,11 +266,15 @@ export default function ResourceCard({
 
           </div>
 
-          {resource.description && (
+          {/* DESCRIPTION */}
+
+          {resource?.description && (
             <p className="mt-1 line-clamp-2 text-sm text-slate-400">
               {resource.description}
             </p>
           )}
+
+          {/* META */}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
 
@@ -298,7 +294,7 @@ export default function ResourceCard({
               </>
             )}
 
-            {resource.uploadedBy?.name && (
+            {resource?.uploadedBy?.name && (
               <>
                 <span className="h-1 w-1 rounded-full bg-slate-700" />
 
@@ -311,54 +307,28 @@ export default function ResourceCard({
             )}
 
           </div>
-
         </div>
-
       </div>
 
-      {/* ACTIONS */}
-
+  
       <div className="relative flex shrink-0 gap-2">
 
-        {/* OPEN / DOWNLOAD */}
+ 
+{resourceUrl ?
+ ( type === "pdf" ?
+   ( <a href={`${resourceUrl}&download=false`} target="_blank" rel="noopener noreferrer" 
+   className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:text-black" >
+     Open PDF <ExternalLink size={15} /> </a> )
+      : isDownloadable ? 
+      ( <a href={`${resourceUrl}&download=true`}
+       className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:text-black" > 
+       Download <Download size={15} /> </a> ) 
+       : ( <a href={`${resourceUrl}&download=false`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:text-black" > Open <ExternalLink size={15} /> </a> ) ) : ( <button disabled className="cursor-not-allowed rounded-xl border border-white/5 bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-slate-600" > Unavailable 
+</button> )}
 
-        {resource.url ? (
-          <a
-            href={resourceUrl}
-            target={
-              isDownloadable
-                ? undefined
-                : "_blank"
-            }
-            rel={
-              isDownloadable
-                ? undefined
-                : "noopener noreferrer"
-            }
-            className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:text-black active:scale-[0.98]"
-          >
-            {isDownloadable ? (
-              <>
-                Download
-                <Download size={15} />
-              </>
-            ) : (
-              <>
-                Open
-                <ExternalLink size={15} />
-              </>
-            )}
-          </a>
-        ) : (
-          <button
-            disabled
-            className="cursor-not-allowed rounded-xl border border-white/5 bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-slate-600"
-          >
-            Unavailable
-          </button>
-        )}
-
-        {/* DELETE */}
+        {/* ===================================================
+            DELETE
+        =================================================== */}
 
         {canDelete && (
           <button
@@ -379,7 +349,6 @@ export default function ResourceCard({
         )}
 
       </div>
-
     </div>
   );
 }

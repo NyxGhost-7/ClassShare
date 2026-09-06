@@ -2,14 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Upload,
-  Link as LinkIcon,
-  FileUp,
-  Loader2,
-  FileText,
-} from "lucide-react";
+import {ArrowLeft,  Upload,Link as LinkIcon, FileUp, Loader2, FileText,} from "lucide-react";
 import Navbar from "../../components/Navbar";
 
 function UploadContent() {
@@ -67,7 +60,7 @@ function UploadContent() {
           method: "POST",
           body: formData,
         });
-
+       
         // Handle non-JSON responses (e.g., server crashes)
         const contentType = response.headers.get("content-type");
         let data;

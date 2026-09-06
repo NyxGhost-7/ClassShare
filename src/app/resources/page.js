@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   ArrowLeft,
@@ -24,10 +24,11 @@ import Navbar from "../../components/Navbar";
 import ResourceCard from "../../components/ResourceCard";
 
 export default function ResourcesPage() {
-  const router = useRouter();
-  const params = useParams();
+ const searchParams = useSearchParams();
 
-  const classroomId = params?.classroomId;
+const classroomId = searchParams.get("classroomId");
+
+  // const classroomId = params?.classroomId;
 
   const [classroom, setClassroom] = useState(null);
   const [resources, setResources] = useState([]);
@@ -35,8 +36,6 @@ export default function ResourcesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-
-  /* ================= LOAD DATA ================= */
 
   useEffect(() => {
     if (!classroomId) return;
@@ -88,8 +87,8 @@ export default function ResourcesPage() {
         filter === "all" ||
         (filter === "file"
           ? ["pdf", "doc", "ppt", "image", "other"].includes(
-              resource.type
-            )
+            resource.type
+          )
           : resource.type === filter);
 
       return matchesSearch && matchesFilter;
@@ -120,7 +119,6 @@ export default function ResourcesPage() {
     },
   ];
 
-  /* ================= LOADING ================= */
 
   if (loading) {
     return (
@@ -131,7 +129,7 @@ export default function ResourcesPage() {
           <div className="text-center">
             <Loader2
               size={36}
-              className="mx-auto animate-spin text-slate-400"
+              className="mx-auto animate-spin text-slate-200"
             />
 
             <p className="mt-4 text-sm text-slate-500">
@@ -143,7 +141,7 @@ export default function ResourcesPage() {
     );
   }
 
-  /* ================= RENDER ================= */
+ 
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -151,7 +149,7 @@ export default function ResourcesPage() {
 
       <main className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
 
-        {/* ================= BACK ================= */}
+     
 
         <button
           onClick={() =>
@@ -169,7 +167,7 @@ export default function ResourcesPage() {
           Back to Classroom
         </button>
 
-        {/* ================= HERO ================= */}
+    
 
         <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
 
@@ -219,7 +217,7 @@ export default function ResourcesPage() {
           </div>
         </section>
 
-        {/* ================= SEARCH ================= */}
+    
 
         <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
 
@@ -254,7 +252,7 @@ export default function ResourcesPage() {
               )}
             </div>
 
-            {/* FILTERS */}
+
 
             <div className="flex gap-2 overflow-x-auto">
 
@@ -264,11 +262,10 @@ export default function ResourcesPage() {
                   onClick={() =>
                     setFilter(item.id)
                   }
-                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                    filter === item.id
+                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${filter === item.id
                       ? "bg-white text-black shadow-lg"
                       : "border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
-                  }`}
+                    }`}
                 >
                   {item.icon}
                   {item.label}
@@ -279,7 +276,6 @@ export default function ResourcesPage() {
           </div>
         </section>
 
-        {/* ================= RESOURCE HEADER ================= */}
 
         <section className="mt-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
 
@@ -311,8 +307,8 @@ export default function ResourcesPage() {
               {filter === "all"
                 ? "Everything"
                 : filter === "file"
-                ? "Files"
-                : `${filter}s`}
+                  ? "Files"
+                  : `${filter}s`}
             </div>
 
             <button
@@ -334,8 +330,7 @@ export default function ResourcesPage() {
           </div>
         </section>
 
-        {/* ================= CONTENT ================= */}
-
+      
         <section className="mt-6">
 
           {filteredResources.length === 0 ? (
@@ -407,10 +402,12 @@ export default function ResourcesPage() {
 
               {filteredResources.map(
                 (resource) => (
-                  <ResourceCard
-                    key={resource._id}
-                    resource={resource}
-                  />
+                <ResourceCard
+                        key={resource._id}
+                        resource={resource}
+                        currentUserId={classroom?.currentUserId}
+                        classroomHostId={classroom?.host?._id || classroom?.host}
+                      />
                 )
               )}
 
