@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
-import { connectDB } from "../../../../lib/mongodb";
-import { authOptions } from "../../../../lib/auth";
+import { connectDB } from "../../../lib/mongodb";
+import { authOptions } from "../../../lib/auth";
 
-import cloudinary from "../../../../lib/cloudinary";
-import Resource from "../../../../models/Resource";
-import Classroom from "../../../../models/Classroom";
+import cloudinary from "../../../lib/cloudinary";
+import Resource from "../../../models/Resource";
+import Classroom from "../../../models/Classroom";
 
 function getResourceType(file) {
   const fileName =
