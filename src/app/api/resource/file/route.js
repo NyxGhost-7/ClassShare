@@ -29,59 +29,14 @@ function sanitizeFileName(name) {
 }
 
 
-function isAllowedCloudinaryUrl(url) {
-  try {
-    const parsed = new URL(url);
 
-    /*
-     * Only HTTPS
-     */
-    if (parsed.protocol !== "https:") {
-      return false;
-    }
 
-    /*
-     * Only your Cloudinary host
-     */
-    if (
-      parsed.hostname !==
-      "res.cloudinary.com"
-    ) {
-      return false;
-    }
-
-    /*
-     * Optional: make sure it belongs to your
-     * Cloudinary cloud.
-     *
-     * Change this if your cloud name changes.
-     */
-    if (
-      !parsed.pathname.startsWith(
-        "/c0is3hgh/"
-      )
-    ) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/* =========================================================
-   GET RESOURCE FILE
-========================================================= */
 
 export async function GET(request) {
   try {
     await connectDB();
 
-    /* =====================================================
-       OPTIONAL AUTH
-    ===================================================== */
-
+  
     const session =
       await getServerSession(
         authOptions
@@ -91,10 +46,6 @@ export async function GET(request) {
       session?.user?.id
         ? session.user.id.toString()
         : null;
-
-    /* =====================================================
-       QUERY
-    ===================================================== */
 
     const { searchParams } =
       new URL(request.url);
@@ -106,9 +57,6 @@ export async function GET(request) {
       searchParams.get("download") ===
       "true";
 
-    /* =====================================================
-       MONGODB ID VALIDATION
-    ===================================================== */
 
     if (
       !resourceId ||
@@ -126,10 +74,6 @@ export async function GET(request) {
         }
       );
     }
-
-    /* =====================================================
-       RESOURCE
-    ===================================================== */
 
     const resource =
       await Resource.findById(
@@ -151,34 +95,8 @@ export async function GET(request) {
       );
     }
 
-    /* =====================================================
-       CLOUDINARY URL VALIDATION
-    ===================================================== */
 
-    if (
-      !isAllowedCloudinaryUrl(
-        resource.url
-      )
-    ) {
-      console.error(
-        "BLOCKED RESOURCE URL:",
-        resource.url
-      );
-
-      return NextResponse.json(
-        {
-          message:
-            "Invalid resource storage URL",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    /* =====================================================
-       CLASSROOM
-    ===================================================== */
+ 
 
     const classroom =
       await Classroom.findById(
@@ -197,9 +115,7 @@ export async function GET(request) {
       );
     }
 
-    /* =====================================================
-       ACCESS CONTROL
-    ===================================================== */
+    
 
     const isPublic =
       classroom.privacy ===
