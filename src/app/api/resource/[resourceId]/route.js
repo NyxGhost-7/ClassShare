@@ -78,10 +78,6 @@ export async function DELETE(
       );
     }
 
-    // =============================
-    // DELETE FROM CLOUDINARY
-    // =============================
-
     if (resource.publicId) {
       let resourceType = "raw";
 
@@ -105,10 +101,6 @@ export async function DELETE(
         }
       );
     }
-
-    // =============================
-    // DELETE FROM DATABASE
-    // =============================
 
     await Resource.findByIdAndDelete(
       resourceId
