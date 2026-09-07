@@ -32,90 +32,77 @@ export default function UploadResource({
   const [loading, setLoading] =
     useState(false);
 
-  /*
-   * ================================
-   * ADD LINK
-   * ================================
-   */
 
-  const addLink = async () => {
-    if (
-      !title.trim() ||
-      !url.trim()
-    ) {
+
+
+const addLink = async () => {
+  if (!title.trim() || !url.trim()) {
+    alert("Title and URL are required");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const trimmedUrl = url.trim();
+
+    // Detect YouTube URL
+    const isYouTube =
+      trimmedUrl.includes("youtube.com") ||
+      trimmedUrl.includes("youtu.be");
+
+    const response = await fetch(
+      "/api/resource/url",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          url: trimmedUrl,
+          classroomId,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
       alert(
-        "Title and URL are required"
+        data.message ||
+          "Failed to add link"
       );
       return;
     }
 
-    setLoading(true);
+    console.log(
+      "LINK ADDED SUCCESSFULLY:",
+      data.resource
+    );
 
-    try {
-      let type = "link";
+    // Optional: show what type was detected
+    console.log(
+      "RESOURCE TYPE:",
+      isYouTube ? "video" : "link"
+    );
 
-      if (
-        url.includes("youtube.com") ||
-        url.includes("youtu.be")
-      ) {
-        type = "video";
-      }
+    router.push(
+      `/classroom/${classroomId}`
+    );
+  } catch (error) {
+    console.error(
+      "ADD LINK ERROR:",
+      error
+    );
 
-      const response =
-        await fetch(
-          "/api/resource",
-          {
-            method: "POST",
+    alert("Failed to add link");
+  } finally {
+    setLoading(false);
+  }
+};
 
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              title:
-                title.trim(),
-
-              description:
-                description.trim(),
-
-              type,
-
-              url:
-                url.trim(),
-
-              classroomId,
-            }),
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        alert(
-          data.message ||
-            "Failed to add link"
-        );
-        return;
-      }
-
-      router.push(
-        `/classroom/${classroomId}`
-      );
-    } catch (error) {
-      console.error(
-        "ADD LINK ERROR:",
-        error
-      );
-
-      alert(
-        "Failed to add link"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
 
@@ -170,17 +157,7 @@ export default function UploadResource({
         classroomId
       );
 
-      /*
-       * IMPORTANT
-       *
-       * Your API route is:
-       *
-       * /api/resource/upload
-       *
-       * NOT:
-       *
-       * /api/upload
-       */
+    
 
       const response =
         await fetch(
@@ -224,11 +201,6 @@ export default function UploadResource({
     }
   };
 
-  /*
-   * ================================
-   * UI
-   * ================================
-   */
 
   return (
     <div className="text-white">

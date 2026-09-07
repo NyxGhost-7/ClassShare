@@ -326,9 +326,7 @@ const resourceUrl = getResourceUrl();
        : ( <a href={`${resourceUrl}&download=false`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:text-black" > Open <ExternalLink size={15} /> </a> ) ) : ( <button disabled className="cursor-not-allowed rounded-xl border border-white/5 bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-slate-600" > Unavailable 
 </button> )}
 
-        {/* ===================================================
-            DELETE
-        =================================================== */}
+       
 
         {canDelete && (
           <button

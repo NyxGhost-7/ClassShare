@@ -62,11 +62,11 @@ const ResourceSchema = new mongoose.Schema(
       required: true,
     },
 
-    uploadedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+ uploadedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null,
+},
   },
   {
     timestamps: true,

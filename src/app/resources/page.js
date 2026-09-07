@@ -14,3 +14,7 @@ export default function ResourcesPage() {
     </Suspense>
   );
 }
+
+// 533695496621391 hCIpoJP4mSFHAx7_7KXSr-mKFJY 
+// CLOUDINARY_URL=cloudinary://533695496621391:hCIpoJP4mSFHAx7_7KXSr-mKFJY@zchzshzd
+// zchzshzd
