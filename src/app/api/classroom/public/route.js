@@ -2,14 +2,11 @@ import { NextResponse } from "next/server";
 
 import { connectDB } from "../../../../lib/mongodb";
 import Classroom from "../../../../models/Classroom";
+import User from "../../../../models/User";
 
 export async function GET() {
   try {
-    console.log("PUBLIC CLASSROOMS: Connecting to MongoDB...");
-
     await connectDB();
-
-    console.log("PUBLIC CLASSROOMS: MongoDB connected");
 
     const classrooms = await Classroom.find({
       privacy: "public",
@@ -20,20 +17,9 @@ export async function GET() {
       })
       .lean();
 
-    console.log(
-      "PUBLIC CLASSROOMS: Found",
-      classrooms.length,
-      "classrooms"
-    );
-
-    return NextResponse.json(
-      {
-        classrooms,
-      },
-      {
-        status: 200,
-      }
-    );
+    return NextResponse.json({
+      classrooms,
+    });
   } catch (error) {
     console.error("GET PUBLIC CLASSROOMS ERROR:", error);
 
