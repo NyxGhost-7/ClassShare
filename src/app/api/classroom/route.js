@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { connectDB } from "../../../lib/mongodb";
 import Classroom from "../../../models/Classroom";
 import { authOptions } from "../../../lib/auth";
+import redis from "@/lib/redis";
 
 export async function GET(request) {
   try {
@@ -14,11 +15,28 @@ export async function GET(request) {
     const code = searchParams.get("code");
     const id = searchParams.get("id");
 
-    // =========================
-    // GET CLASSROOM BY ID
-    // =========================
-
     if (id) {
+      const cacheKey = `classroom:${id}`;
+
+      //  CHECK REDIS FIRST
+      const cachedClassroom = await redis.get(cacheKey);
+
+      if (cachedClassroom) {
+        console.log("Redis Cache HIT");
+
+        return NextResponse.json({
+          classroom:
+            typeof cachedClassroom === "string"
+              ? JSON.parse(cachedClassroom)
+              : cachedClassroom,
+
+          source: "redis",
+        });
+      }
+
+      console.log("Redis Cache MISS");
+
+      //  IF NOT IN REDIS then GET FROM MONGODB
       const classroom = await Classroom.findById(id)
         .populate("host", "name email image")
         .populate("members", "name email image");
@@ -34,21 +52,31 @@ export async function GET(request) {
         );
       }
 
-      // =========================
+      
       // PUBLIC CLASSROOM
-      // No login required
-      // =========================
+     
 
       if (classroom.privacy === "public") {
+        // Store in Redis for 1 hour
+        await redis.set(
+          cacheKey,
+          JSON.stringify(classroom),
+          {
+            ex: 3600,
+          }
+        );
+
+        console.log("Classroom stored in Redis");
+
         return NextResponse.json({
           classroom,
+          source: "mongodb",
         });
       }
 
-      // =========================
+      
       // PRIVATE CLASSROOM
-      // Login required
-      // =========================
+     
 
       const session =
         await getServerSession(authOptions);
@@ -93,13 +121,13 @@ export async function GET(request) {
 
       return NextResponse.json({
         classroom,
+        source: "mongodb",
       });
     }
 
-    // =========================
-    // FIND BY CODE
-    // =========================
 
+    // GET CLASSROOM BY CODE
+  
     if (code) {
       const session =
         await getServerSession(authOptions);
@@ -168,13 +196,14 @@ export async function GET(request) {
 
       return NextResponse.json({
         classroom,
+        source: "mongodb",
       });
     }
 
-    // =========================
+    
     // GET ALL USER CLASSROOMS
     // /api/classroom
-    // =========================
+  
 
     const session =
       await getServerSession(authOptions);

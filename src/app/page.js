@@ -157,6 +157,20 @@ export default function Home() {
           >
             Explore Classrooms
           </button>
+          <button
+            type="button"
+            onClick={()=>{router.push("/description")}}
+            className="group flex items-center gap-3 rounded-[4.5px] bg-white px-7 py-4 font-bold text-slate-900 shadow-2xl shadow-indigo-500/20 transition duration-300 hover:scale-105 hover:bg-slate-100"
+        
+
+          >
+            Write description
+             <ArrowRight
+              size={20}
+              aria-hidden="true"
+              className="transition-transform duration-200 group-hover:translate-x-1"
+            />
+          </button>
         </div>
 
         {/* Small trust text */}

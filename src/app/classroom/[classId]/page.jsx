@@ -3,18 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {
-  ArrowLeft,
-  BookOpen,
-  Plus,
-  Copy,
-  Check,
-  Hash,
-  FolderOpen,
-  Share2,
-  Loader2,
-} from "lucide-react";
-
+import {ArrowLeft,BookOpen, Plus,Copy,Check,Hash,FolderOpen,Share2,Loader2,} from "lucide-react";
 import Navbar from "../../../components/Navbar";
 import ResourceCard from "../../../components/ResourceCard";
 
