@@ -8,22 +8,32 @@ const CACHE_KEY = "public:classrooms";
 
 export async function GET() {
   try {
-    // 1. Check Redis first
+    console.log("1️⃣ PUBLIC CLASSROOM API START");
+
+    // Redis GET
+    console.log("2️⃣ Checking Redis...");
+
     const cachedClassrooms = await redis.get(CACHE_KEY);
 
+    console.log("3️⃣ Redis GET SUCCESS");
+
     if (cachedClassrooms) {
-      console.log("⚡ PUBLIC CLASSROOMS: Redis HIT");
+      console.log("⚡ REDIS HIT");
 
       return NextResponse.json({
-        classrooms: JSON.parse(cachedClassrooms),
+        classrooms: cachedClassrooms,
         source: "redis",
       });
     }
 
-    console.log("🐢 PUBLIC CLASSROOMS: Redis MISS");
+    console.log("🐢 REDIS MISS");
 
-    // 2. Redis miss → MongoDB
+    // MongoDB
+    console.log("4️⃣ Connecting MongoDB...");
+
     await connectDB();
+
+    console.log("5️⃣ MongoDB connected");
 
     const classrooms = await Classroom.find({
       privacy: "public",
@@ -34,22 +44,30 @@ export async function GET() {
       })
       .lean();
 
-    // 3. Store result in Redis
+    console.log(
+      "6️⃣ MongoDB classrooms:",
+      classrooms.length
+    );
+
+    // Redis SET
+    console.log("7️Saving to Redis...");
+
     await redis.set(
       CACHE_KEY,
       JSON.stringify(classrooms),
       {
-        EX: 60, // cache for 60 seconds
+        EX: 60,
       }
     );
 
-    // 4. Return MongoDB result
+    console.log("8️ Redis SET SUCCESS");
+
     return NextResponse.json({
       classrooms,
       source: "mongodb",
     });
   } catch (error) {
-    console.error("GET PUBLIC CLASSROOMS ERROR:", error);
+    console.error(" GET PUBLIC CLASSROOMS ERROR:", error);
 
     return NextResponse.json(
       {
