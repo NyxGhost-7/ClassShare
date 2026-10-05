@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
-
 import { getServerSession } from "next-auth";
 
 import { connectDB } from "../../../../lib/mongodb";
 import Classroom from "../../../../models/Classroom";
 import User from "../../../../models/User";
-
+import redis from "@/lib/redis";
 import { authOptions } from "../../../../lib/auth";
+
+const CACHE_KEY = "public:classrooms";
+const CACHE_TTL = 60;
+
+// =========================================================
+// Generate classroom code
+// =========================================================
 
 function generateCode() {
   return (
@@ -18,18 +24,24 @@ function generateCode() {
   );
 }
 
+// =========================================================
+// CREATE CLASSROOM
+// =========================================================
+
 export async function POST(request) {
   try {
+    // -----------------------------------------------------
+    // 1. Connect MongoDB
+    // -----------------------------------------------------
+
     await connectDB();
 
-    // =========================
-    // AUTHENTICATION
-    // =========================
+    // -----------------------------------------------------
+    // 2. Get session
+    // -----------------------------------------------------
 
     const session =
-      await getServerSession(
-        authOptions
-      );
+      await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -43,9 +55,9 @@ export async function POST(request) {
       );
     }
 
-    // =========================
-    // USER
-    // =========================
+    // -----------------------------------------------------
+    // 3. Find user
+    // -----------------------------------------------------
 
     const user = await User.findById(
       session.user.id
@@ -62,15 +74,19 @@ export async function POST(request) {
       );
     }
 
-    // =========================
-    // REQUEST
-    // =========================
+    // -----------------------------------------------------
+    // 4. Get request body
+    // -----------------------------------------------------
 
     const {
       name,
       description,
       privacy,
     } = await request.json();
+
+    // -----------------------------------------------------
+    // 5. Validate name
+    // -----------------------------------------------------
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -83,6 +99,10 @@ export async function POST(request) {
         }
       );
     }
+
+    // -----------------------------------------------------
+    // 6. Validate privacy
+    // -----------------------------------------------------
 
     if (
       !["public", "private"].includes(
@@ -100,9 +120,9 @@ export async function POST(request) {
       );
     }
 
-    // =========================
-    // PRIVATE CODE
-    // =========================
+    // -----------------------------------------------------
+    // 7. Generate code for private classroom
+    // -----------------------------------------------------
 
     let code;
 
@@ -110,17 +130,15 @@ export async function POST(request) {
       code = generateCode();
 
       while (
-        await Classroom.exists({
-          code,
-        })
+        await Classroom.exists({ code })
       ) {
         code = generateCode();
       }
     }
 
-    // =========================
-    // CREATE
-    // =========================
+    // -----------------------------------------------------
+    // 8. Create classroom in MongoDB
+    // -----------------------------------------------------
 
     const classroom =
       await Classroom.create({
@@ -138,6 +156,86 @@ export async function POST(request) {
         members: [user._id],
       });
 
+    console.log(
+      "✅ Classroom created:",
+      classroom._id.toString()
+    );
+
+    // =====================================================
+    // 9. STORE PUBLIC CLASSROOM IN REDIS
+    // =====================================================
+
+    if (privacy === "public") {
+      console.log(
+        "⚡ Updating Redis cache..."
+      );
+
+      // Get existing Redis cache
+      const cached =
+        await redis.get(CACHE_KEY);
+
+      let classrooms = [];
+
+      if (cached) {
+        classrooms =
+          typeof cached === "string"
+            ? JSON.parse(cached)
+            : cached;
+      }
+
+      // ---------------------------------------------------
+      // Create object in SAME format as GET API
+      // ---------------------------------------------------
+
+      const publicClassroom = {
+        _id: classroom._id.toString(),
+
+        name: classroom.name,
+
+        description:
+          classroom.description,
+
+        privacy: classroom.privacy,
+
+        members:
+          classroom.members.map((id) =>
+            id.toString()
+          ),
+
+        host: {
+          _id: user._id.toString(),
+          name: user.name,
+          image: user.image || null,
+        },
+
+        createdAt: classroom.createdAt,
+        updatedAt: classroom.updatedAt,
+      };
+
+      classrooms =
+        classrooms.filter(
+          (item) =>
+            String(item._id) !==
+            String(publicClassroom._id)
+        );
+
+   
+      classrooms.unshift(
+        publicClassroom
+      );
+
+      await redis.set(
+        CACHE_KEY,
+        JSON.stringify(classrooms),
+        {
+          EX: CACHE_TTL,
+        }
+      );
+
+     
+    }
+
+ 
     return NextResponse.json(
       {
         message:
@@ -149,9 +247,10 @@ export async function POST(request) {
         status: 201,
       }
     );
+
   } catch (error) {
     console.error(
-      "CREATE CLASSROOM ERROR:",
+      "❌ CREATE CLASSROOM ERROR:",
       error
     );
 

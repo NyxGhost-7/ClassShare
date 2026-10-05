@@ -40,6 +40,7 @@ export async function GET(request) {
       const classroom = await Classroom.findById(id)
         .populate("host", "name email image")
         .populate("members", "name email image");
+        console.log(classroom)
 
       if (!classroom) {
         return NextResponse.json(
@@ -62,11 +63,11 @@ export async function GET(request) {
           cacheKey,
           JSON.stringify(classroom),
           {
-            ex: 3600,
+            ex: 60,
           }
         );
 
-        console.log("Classroom stored in Redis");
+        console.log(classroom);
 
         return NextResponse.json({
           classroom,

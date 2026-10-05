@@ -1,9 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {ArrowLeft,BookOpen, Plus,Copy,Check,Hash,FolderOpen,Share2,Loader2,} from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Plus,
+  Copy,
+  Check,
+  Hash,
+  FolderOpen,
+  Share2,
+  Loader2,
+} from "lucide-react";
+
 import Navbar from "../../../components/Navbar";
 import ResourceCard from "../../../components/ResourceCard";
 
@@ -12,7 +23,6 @@ export default function ClassroomPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
-  // Folder is [classId]
   const classroomId = params.classId;
 
   const [classroom, setClassroom] = useState(null);
@@ -20,27 +30,32 @@ export default function ClassroomPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (classroomId) {
-      loadClassroom();
-    }
-  }, [classroomId]);
+  // =========================================================
+  // LOAD CLASSROOM + RESOURCES
+  // =========================================================
 
-  const loadClassroom = async () => {
+  const loadClassroom = useCallback(async () => {
+    if (!classroomId) return;
+
     try {
       setLoading(true);
 
+      // -----------------------------------------------------
+      // Load classroom
+      // -----------------------------------------------------
+
       const classroomResponse = await fetch(
-        `/api/classroom?id=${classroomId}`
+        `/api/classroom?id=${classroomId}`,
+        {
+          cache: "no-store",
+        }
       );
 
-      const classroomData =
-        await classroomResponse.json();
+      const classroomData = await classroomResponse.json();
 
       if (!classroomResponse.ok) {
         console.error(
-          classroomData.message ||
-          "Failed to load classroom"
+          classroomData.message || "Failed to load classroom"
         );
 
         setClassroom(null);
@@ -49,67 +64,135 @@ export default function ClassroomPage() {
 
       setClassroom(classroomData.classroom);
 
+      // -----------------------------------------------------
+      // Load resources
+      // -----------------------------------------------------
+
       const resourceResponse = await fetch(
-        `/api/resource?classroomId=${classroomId}`
+        `/api/resource?classroomId=${classroomId}`,
+        {
+          cache: "no-store",
+        }
       );
 
-      const resourceData =
-        await resourceResponse.json();
+      const resourceData = await resourceResponse.json();
 
       if (!resourceResponse.ok) {
         console.error(
-          resourceData.message ||
-          "Failed to load resources"
+          resourceData.message || "Failed to load resources"
         );
 
         setResources([]);
         return;
       }
 
-      setResources(
-        resourceData.resources || []
-      );
-
+      setResources(resourceData.resources || []);
     } catch (error) {
-      console.error(
-        "CLASSROOM LOAD ERROR:",
-        error
-      );
+      console.error("CLASSROOM LOAD ERROR:", error);
 
       setClassroom(null);
+      setResources([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [classroomId]);
+
+  // =========================================================
+  // INITIAL LOAD
+  // =========================================================
+
+  useEffect(() => {
+    loadClassroom();
+  }, [loadClassroom]);
+
+  // =========================================================
+  // REAL-TIME RESOURCE UPLOAD EVENT
+  // =========================================================
+
+  useEffect(() => {
+    const handleResourceUploaded = (event) => {
+      const uploadedResource = event.detail;
+
+      if (!uploadedResource) {
+        return;
+      }
+
+      // Make sure resource belongs to this classroom
+      const uploadedClassroomId =
+        uploadedResource.classroom?._id ||
+        uploadedResource.classroom;
+
+      if (
+        String(uploadedClassroomId) !== String(classroomId)
+      ) {
+        return;
+      }
+
+      setResources((previousResources) => {
+        // Prevent duplicate resource
+        const alreadyExists = previousResources.some(
+          (resource) =>
+            String(resource._id) ===
+            String(uploadedResource._id)
+        );
+
+        if (alreadyExists) {
+          return previousResources;
+        }
+
+        // New resource appears at top
+        return [
+          uploadedResource,
+          ...previousResources,
+        ];
+      });
+    };
+
+    window.addEventListener(
+      "resource-uploaded",
+      handleResourceUploaded
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resource-uploaded",
+        handleResourceUploaded
+      );
+    };
+  }, [classroomId]);
+
+  // =========================================================
+  // COPY CLASSROOM LINK
+  // =========================================================
 
   const copyLink = async () => {
     try {
       const inviteUrl =
         `${window.location.origin}/classroom/${classroomId}`;
 
-      await navigator.clipboard.writeText(
-        inviteUrl
-      );
+      await navigator.clipboard.writeText(inviteUrl);
 
       setCopied(true);
 
       setTimeout(() => {
         setCopied(false);
       }, 2000);
-
     } catch (error) {
       console.error(
-        "Failed to copy link",
+        "FAILED TO COPY LINK:",
         error
       );
     }
   };
 
+  // =========================================================
+  // LOADING UI
+  // =========================================================
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black text-white">
         <div className="text-center">
-
           <Loader2
             size={36}
             className="mx-auto animate-spin text-slate-400"
@@ -118,17 +201,19 @@ export default function ClassroomPage() {
           <p className="mt-4 text-sm text-slate-500">
             Loading classroom...
           </p>
-
         </div>
       </div>
     );
   }
 
+  // =========================================================
+  // CLASSROOM NOT FOUND
+  // =========================================================
+
   if (!classroom) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black text-white">
         <div className="text-center">
-
           <h1 className="text-2xl font-bold">
             Classroom not found
           </h1>
@@ -139,18 +224,19 @@ export default function ClassroomPage() {
           </p>
 
           <button
-            onClick={() =>
-              router.push("/dashboard")
-            }
-            className="mt-6 rounded-xl bg-white px-5 py-3 font-semibold text-black"
+            onClick={() => router.push("/dashboard")}
+            className="mt-6 rounded-xl bg-white px-5 py-3 font-semibold text-black transition hover:bg-slate-200"
           >
             Back to Dashboard
           </button>
-
         </div>
       </div>
     );
   }
+
+  // =========================================================
+  // MAIN UI
+  // =========================================================
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -159,10 +245,12 @@ export default function ClassroomPage() {
 
       <main className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
 
+        {/* ================================================= */}
+        {/* BACK BUTTON */}
+        {/* ================================================= */}
+
         <button
-          onClick={() =>
-            router.push("/dashboard")
-          }
+          onClick={() => router.push("/dashboard")}
           className="group mb-8 flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
         >
           <ArrowLeft
@@ -173,13 +261,17 @@ export default function ClassroomPage() {
           Back to Dashboard
         </button>
 
+        {/* ================================================= */}
         {/* CLASSROOM HEADER */}
+        {/* ================================================= */}
 
         <section className="relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] p-6 sm:p-8">
 
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/[0.03] blur-[80px]" />
 
           <div className="relative flex flex-col justify-between gap-8 md:flex-row md:items-center">
+
+            {/* CLASSROOM INFORMATION */}
 
             <div className="max-w-2xl">
 
@@ -248,7 +340,9 @@ export default function ClassroomPage() {
           </div>
         </section>
 
-        {/* RESOURCES */}
+        {/* ================================================= */}
+        {/* RESOURCE HEADER */}
+        {/* ================================================= */}
 
         <section className="mt-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
 
@@ -265,7 +359,8 @@ export default function ClassroomPage() {
             </h2>
 
             <p className="mt-2 text-slate-500">
-              Notes, documents, videos and useful links — all in one place.
+              Notes, documents, videos and useful links —
+              all in one place.
             </p>
 
           </div>
@@ -288,7 +383,9 @@ export default function ClassroomPage() {
 
         </section>
 
+        {/* ================================================= */}
         {/* RESOURCE COUNT */}
+        {/* ================================================= */}
 
         {resources.length > 0 && (
           <div className="mt-8 flex items-center gap-3">
@@ -307,11 +404,17 @@ export default function ClassroomPage() {
           </div>
         )}
 
+        {/* ================================================= */}
         {/* RESOURCE LIST */}
+        {/* ================================================= */}
 
         <section className="mt-8">
 
           {resources.length === 0 ? (
+
+            // ------------------------------------------------
+            // EMPTY STATE
+            // ------------------------------------------------
 
             <div className="relative overflow-hidden rounded-3xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-20 text-center">
 
@@ -345,15 +448,30 @@ export default function ClassroomPage() {
 
           ) : (
 
+            // ------------------------------------------------
+            // RESOURCE LIST
+            // ------------------------------------------------
+
             <div className="space-y-4">
 
               {resources.map((resource) => (
                 <ResourceCard
-                   key={resource._id}
-                    resource={resource}
-                    currentUserId={session?.user?.id}
-                    classroomHostId={classroom.host?._id || classroom.host}
-                    onDelete={(resourceId) => {setResources((previous) => previous.filter( (resource) =>resource._id !== resourceId) ); }}/>
+                  key={resource._id}
+                  resource={resource}
+                  currentUserId={session?.user?.id}
+                  classroomHostId={
+                    classroom.host?._id ||
+                    classroom.host
+                  }
+                  onDelete={(resourceId) => {
+                    setResources((previous) =>
+                      previous.filter(
+                        (resource) =>
+                          resource._id !== resourceId
+                      )
+                    );
+                  }}
+                />
               ))}
 
             </div>

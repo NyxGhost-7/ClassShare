@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -15,20 +15,16 @@ import {
   X,
   Plus,
   Loader2,
-  Image as ImageIcon,
-  Presentation,
-  File,
 } from "lucide-react";
 
 import Navbar from "../../components/Navbar";
 import ResourceCard from "../../components/ResourceCard";
 
 export default function ResourcesPage() {
- const searchParams = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-const classroomId = searchParams.get("classroomId");
-
-  // const classroomId = params?.classroomId;
+  const classroomId = searchParams.get("classroomId");
 
   const [classroom, setClassroom] = useState(null);
   const [resources, setResources] = useState([]);
@@ -37,13 +33,10 @@ const classroomId = searchParams.get("classroomId");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
+  
+  const loadResources = useCallback(async () => {
     if (!classroomId) return;
 
-    loadResources();
-  }, [classroomId]);
-
-  const loadResources = async () => {
     try {
       setLoading(true);
 
@@ -63,15 +56,78 @@ const classroomId = searchParams.get("classroomId");
         );
       }
 
-      setClassroom(data.classroom);
+      setClassroom(data.classroom || null);
       setResources(data.resources || []);
     } catch (error) {
       console.error("RESOURCE LOAD ERROR:", error);
+
+      setClassroom(null);
+      setResources([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [classroomId]);
 
+
+  useEffect(() => {
+    loadResources();
+  }, [loadResources]);
+
+ 
+  useEffect(() => {
+    const handleResourceUploaded = (event) => {
+      const uploadedResource = event.detail;
+
+      if (!uploadedResource) {
+        return;
+      }
+
+      // Find classroom ID from uploaded resource
+      const uploadedClassroomId =
+        uploadedResource.classroom?._id ||
+        uploadedResource.classroom ||
+        uploadedResource.classroomId;
+
+      // Ignore resources belonging to another classroom
+      if (
+        String(uploadedClassroomId) !==
+        String(classroomId)
+      ) {
+        return;
+      }
+
+      setResources((previousResources) => {
+        // Prevent duplicate resource
+        const alreadyExists = previousResources.some(
+          (resource) =>
+            String(resource._id) ===
+            String(uploadedResource._id)
+        );
+
+        if (alreadyExists) {
+          return previousResources;
+        }
+
+        // Put newly uploaded resource at the top
+        return [
+          uploadedResource,
+          ...previousResources,
+        ];
+      });
+    };
+
+    window.addEventListener(
+      "resource-uploaded",
+      handleResourceUploaded
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resource-uploaded",
+        handleResourceUploaded
+      );
+    };
+  }, [classroomId]);
 
 
   const filteredResources = useMemo(() => {
@@ -80,15 +136,23 @@ const classroomId = searchParams.get("classroomId");
     return resources.filter((resource) => {
       const matchesSearch =
         !query ||
-        resource.title?.toLowerCase().includes(query) ||
-        resource.description?.toLowerCase().includes(query);
+        resource.title
+          ?.toLowerCase()
+          .includes(query) ||
+        resource.description
+          ?.toLowerCase()
+          .includes(query);
 
       const matchesFilter =
         filter === "all" ||
         (filter === "file"
-          ? ["pdf", "doc", "ppt", "image", "other"].includes(
-            resource.type
-          )
+          ? [
+              "pdf",
+              "doc",
+              "ppt",
+              "image",
+              "other",
+            ].includes(resource.type)
           : resource.type === filter);
 
       return matchesSearch && matchesFilter;
@@ -119,7 +183,6 @@ const classroomId = searchParams.get("classroomId");
     },
   ];
 
-
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white">
@@ -141,15 +204,48 @@ const classroomId = searchParams.get("classroomId");
     );
   }
 
- 
+
+  if (!classroom) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <Navbar />
+
+        <div className="flex min-h-[70vh] items-center justify-center">
+          <div className="text-center">
+            <FolderOpen
+              size={42}
+              className="mx-auto text-slate-600"
+            />
+
+            <h1 className="mt-5 text-2xl font-bold">
+              Classroom not found
+            </h1>
+
+            <p className="mt-2 text-slate-500">
+              This classroom may have been deleted
+              or does not exist.
+            </p>
+
+            <button
+              onClick={() =>
+                router.push("/dashboard")
+              }
+              className="mt-6 rounded-xl bg-white px-5 py-3 font-semibold text-black transition hover:bg-slate-200"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
 
       <main className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-
-     
 
         <button
           onClick={() =>
@@ -167,11 +263,8 @@ const classroomId = searchParams.get("classroomId");
           Back to Classroom
         </button>
 
-    
 
         <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-
-          {/* GLOW */}
 
           <div className="absolute -right-32 -top-32 h-80 w-80 rounded-full bg-indigo-500/10 blur-[100px]" />
 
@@ -184,7 +277,7 @@ const classroomId = searchParams.get("classroomId");
             </div>
 
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
-              {classroom?.name || "Classroom"}
+              {classroom.name || "Classroom"}
 
               <span className="block bg-gradient-to-r from-indigo-100 via-green-400 to-pink-400 bg-clip-text text-transparent">
                 Resources.
@@ -207,7 +300,7 @@ const classroomId = searchParams.get("classroomId");
                   : "Resources"}
               </div>
 
-              {classroom?.code && (
+              {classroom.code && (
                 <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 font-mono text-sm text-slate-400">
                   {classroom.code}
                 </div>
@@ -217,7 +310,6 @@ const classroomId = searchParams.get("classroomId");
           </div>
         </section>
 
-    
 
         <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
 
@@ -236,8 +328,8 @@ const classroomId = searchParams.get("classroomId");
                 type="text"
                 placeholder="Search resources..."
                 value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
+                onChange={(event) =>
+                  setSearch(event.target.value)
                 }
                 className="w-full rounded-xl border border-white/10 bg-black px-11 py-3 text-white outline-none placeholder:text-slate-600 transition focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/10"
               />
@@ -250,9 +342,10 @@ const classroomId = searchParams.get("classroomId");
                   <X size={17} />
                 </button>
               )}
+
             </div>
 
-
+            {/* FILTERS */}
 
             <div className="flex gap-2 overflow-x-auto">
 
@@ -262,10 +355,11 @@ const classroomId = searchParams.get("classroomId");
                   onClick={() =>
                     setFilter(item.id)
                   }
-                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${filter === item.id
+                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    filter === item.id
                       ? "bg-white text-black shadow-lg"
                       : "border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
-                    }`}
+                  }`}
                 >
                   {item.icon}
                   {item.label}
@@ -282,6 +376,7 @@ const classroomId = searchParams.get("classroomId");
           <div>
 
             <div className="flex items-center gap-2">
+
               <h2 className="text-2xl font-bold">
                 Learning Resources
               </h2>
@@ -289,6 +384,7 @@ const classroomId = searchParams.get("classroomId");
               <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-slate-400">
                 {filteredResources.length}
               </span>
+
             </div>
 
             <p className="mt-2 text-sm text-slate-500">
@@ -307,8 +403,8 @@ const classroomId = searchParams.get("classroomId");
               {filter === "all"
                 ? "Everything"
                 : filter === "file"
-                  ? "Files"
-                  : `${filter}s`}
+                ? "Files"
+                : `${filter}s`}
             </div>
 
             <button
@@ -330,11 +426,12 @@ const classroomId = searchParams.get("classroomId");
           </div>
         </section>
 
-      
+
         <section className="mt-6">
 
           {filteredResources.length === 0 ? (
 
+   
             <div className="relative overflow-hidden rounded-3xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-20 text-center">
 
               <div className="absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 rounded-full bg-indigo-500/10 blur-[80px]" />
@@ -398,18 +495,22 @@ const classroomId = searchParams.get("classroomId");
 
           ) : (
 
+    
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
 
-              {filteredResources.map(
-                (resource) => (
+              {filteredResources.map((resource) => (
                 <ResourceCard
-                        key={resource._id}
-                        resource={resource}
-                        currentUserId={classroom?.currentUserId}
-                        classroomHostId={classroom?.host?._id || classroom?.host}
-                      />
-                )
-              )}
+                  key={resource._id}
+                  resource={resource}
+                  currentUserId={
+                    classroom?.currentUserId
+                  }
+                  classroomHostId={
+                    classroom?.host?._id ||
+                    classroom?.host
+                  }
+                />
+              ))}
 
             </div>
 

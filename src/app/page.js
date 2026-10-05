@@ -12,8 +12,41 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadPublicClassrooms();
-  }, []);
+  loadPublicClassrooms();
+
+  const handleClassroomCreated = (event) => {
+    const classroom = event.detail;
+
+    if (!classroom || classroom.privacy !== "public") {
+      return;
+    }
+
+    setClassrooms((prev) => {
+      // duplicate protection
+      if (
+        prev.some(
+          (item) => item._id === classroom._id
+        )
+      ) {
+        return prev;
+      }
+
+      return [classroom, ...prev];
+    });
+  };
+
+  window.addEventListener(
+    "classroom-created",
+    handleClassroomCreated
+  );
+
+  return () => {
+    window.removeEventListener(
+      "classroom-created",
+      handleClassroomCreated
+    );
+  };
+}, []);
 
   const loadPublicClassrooms = async () => {
     try {

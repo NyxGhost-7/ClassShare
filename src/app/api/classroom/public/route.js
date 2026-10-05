@@ -8,32 +8,57 @@ const CACHE_KEY = "public:classrooms";
 
 export async function GET() {
   try {
-    console.log("1️⃣ PUBLIC CLASSROOM API START");
+    console.log("🔍 Checking Redis...");
 
-    // Redis GET
-    console.log("2️⃣ Checking Redis...");
+    // ==========================================
+    // 1. Get public classroom IDs from Redis
+    // ==========================================
 
-    const cachedClassrooms = await redis.get(CACHE_KEY);
+    const redisIds = await redis.smembers(CACHE_KEY);
 
-    console.log("3️⃣ Redis GET SUCCESS");
+    console.log("📦 Redis IDs:", redisIds);
 
-    if (cachedClassrooms) {
+    // ==========================================
+    // 2. Connect MongoDB
+    // ==========================================
+
+    await connectDB();
+
+    // ==========================================
+    // 3. REDIS HIT
+    // ==========================================
+
+    if (redisIds?.length > 0) {
       console.log("⚡ REDIS HIT");
 
+      const classrooms = await Classroom.find({
+        _id: {
+          $in: redisIds,
+        },
+        privacy: "public",
+      })
+        .populate("host", "name image")
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
+
+      console.log(
+        `🏫 ${classrooms.length} public classrooms loaded`
+      );
+
       return NextResponse.json({
-        classrooms: cachedClassrooms,
+        success: true,
+        classrooms,
         source: "redis",
       });
     }
 
+    // ==========================================
+    // 4. REDIS MISS
+    // ==========================================
+
     console.log("🐢 REDIS MISS");
-
-    // MongoDB
-    console.log("4️⃣ Connecting MongoDB...");
-
-    await connectDB();
-
-    console.log("5️⃣ MongoDB connected");
 
     const classrooms = await Classroom.find({
       privacy: "public",
@@ -45,32 +70,48 @@ export async function GET() {
       .lean();
 
     console.log(
-      "6️⃣ MongoDB classrooms:",
-      classrooms.length
+      `🍃 MongoDB returned ${classrooms.length} classrooms`
     );
 
-    // Redis SET
-    console.log("7️Saving to Redis...");
+    // ==========================================
+    // 5. Store ONLY IDs in Redis SET
+    // ==========================================
 
-    await redis.set(
-      CACHE_KEY,
-      JSON.stringify(classrooms),
-      {
-        EX: 60,
-      }
-    );
+    if (classrooms.length > 0) {
+      const classroomIds = classrooms.map(
+        (classroom) => classroom._id.toString()
+      );
 
-    console.log("8️ Redis SET SUCCESS");
+      await redis.sadd(
+        CACHE_KEY,
+        ...classroomIds
+      );
+
+      console.log(
+        "✅ Public classroom IDs stored in Redis:",
+        classroomIds
+      );
+    }
+
+    // ==========================================
+    // 6. Response
+    // ==========================================
 
     return NextResponse.json({
+      success: true,
       classrooms,
       source: "mongodb",
     });
+
   } catch (error) {
-    console.error(" GET PUBLIC CLASSROOMS ERROR:", error);
+    console.error(
+      "❌ GET PUBLIC CLASSROOMS ERROR:",
+      error
+    );
 
     return NextResponse.json(
       {
+        success: false,
         message: "Failed to fetch public classrooms",
         error:
           error instanceof Error
