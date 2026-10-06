@@ -10,23 +10,13 @@ export async function GET() {
   try {
     console.log("🔍 Checking Redis...");
 
-    // ==========================================
-    // 1. Get public classroom IDs from Redis
-    // ==========================================
-
+  
     const redisIds = await redis.smembers(CACHE_KEY);
 
     console.log("📦 Redis IDs:", redisIds);
 
-    // ==========================================
-    // 2. Connect MongoDB
-    // ==========================================
-
     await connectDB();
 
-    // ==========================================
-    // 3. REDIS HIT
-    // ==========================================
 
     if (redisIds?.length > 0) {
       console.log("⚡ REDIS HIT");
