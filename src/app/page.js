@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {ArrowRight,BookOpen,Globe2,Loader2,Users,} from "lucide-react";
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 export default function Home() {
   const router = useRouter();
 
@@ -102,6 +103,7 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
   
     <Analytics />
+    <SpeedInsights />
 
 
       <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
