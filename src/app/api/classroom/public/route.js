@@ -2,102 +2,59 @@ import { NextResponse } from "next/server";
 
 import { connectDB } from "../../../../lib/mongodb";
 import Classroom from "../../../../models/Classroom";
+import User from "../../../../models/User";
 import redis from "@/lib/redis";
 
 const CACHE_KEY = "public:classrooms";
 
 export async function GET() {
   try {
-    console.log("🔍 Checking Redis...");
+    await connectDB();
 
-  
     const redisIds = await redis.smembers(CACHE_KEY);
 
     console.log("📦 Redis IDs:", redisIds);
 
-    await connectDB();
-
+    let classrooms;
 
     if (redisIds?.length > 0) {
       console.log("⚡ REDIS HIT");
 
-      const classrooms = await Classroom.find({
-        _id: {
-          $in: redisIds,
-        },
+      classrooms = await Classroom.find({
+        _id: { $in: redisIds },
         privacy: "public",
       })
         .populate("host", "name image")
-        .sort({
-          createdAt: -1,
-        })
+        .sort({ createdAt: -1 })
+        .lean();
+    } else {
+      console.log("🐢 REDIS MISS");
+
+      classrooms = await Classroom.find({
+        privacy: "public",
+      })
+        .populate("host", "name image")
+        .sort({ createdAt: -1 })
         .lean();
 
-      console.log(
-        `🏫 ${classrooms.length} public classrooms loaded`
-      );
+      if (classrooms.length > 0) {
+        const classroomIds = classrooms.map((classroom) =>
+          classroom._id.toString()
+        );
 
-      return NextResponse.json({
-        success: true,
-        classrooms,
-        source: "redis",
-      });
+        await redis.sadd(CACHE_KEY, ...classroomIds);
+
+        console.log("✅ Cached IDs:", classroomIds);
+      }
     }
-
-    // ==========================================
-    // 4. REDIS MISS
-    // ==========================================
-
-    console.log("🐢 REDIS MISS");
-
-    const classrooms = await Classroom.find({
-      privacy: "public",
-    })
-      .populate("host", "name image")
-      .sort({
-        createdAt: -1,
-      })
-      .lean();
-
-    console.log(
-      `🍃 MongoDB returned ${classrooms.length} classrooms`
-    );
-
-    // ==========================================
-    // 5. Store ONLY IDs in Redis SET
-    // ==========================================
-
-    if (classrooms.length > 0) {
-      const classroomIds = classrooms.map(
-        (classroom) => classroom._id.toString()
-      );
-
-      await redis.sadd(
-        CACHE_KEY,
-        ...classroomIds
-      );
-
-      console.log(
-        "✅ Public classroom IDs stored in Redis:",
-        classroomIds
-      );
-    }
-
-    // ==========================================
-    // 6. Response
-    // ==========================================
 
     return NextResponse.json({
       success: true,
       classrooms,
-      source: "mongodb",
+      source: redisIds?.length > 0 ? "redis" : "mongodb",
     });
-
   } catch (error) {
-    console.error(
-      "❌ GET PUBLIC CLASSROOMS ERROR:",
-      error
-    );
+    console.error("❌ GET PUBLIC CLASSROOMS ERROR:", error);
 
     return NextResponse.json(
       {
@@ -108,9 +65,7 @@ export async function GET() {
             ? error.message
             : String(error),
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

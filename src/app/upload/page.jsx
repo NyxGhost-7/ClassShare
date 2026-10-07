@@ -62,15 +62,8 @@ function UploadContent() {
     try {
       setLoading(true);
 
-      // =====================================================
-      // FILE UPLOAD
-      // =====================================================
-
       if (mode === "file") {
-        // ---------------------------------------------------
-        // File validation
-        // ---------------------------------------------------
-
+     
         if (!file) {
           setError("Please select a file.");
           setLoading(false);
@@ -84,9 +77,6 @@ function UploadContent() {
           return;
         }
 
-        // ---------------------------------------------------
-        // FormData
-        // ---------------------------------------------------
 
         const formData = new FormData();
 
@@ -104,10 +94,6 @@ function UploadContent() {
           classroomId
         );
 
-        // ---------------------------------------------------
-        // API request
-        // ---------------------------------------------------
-
         const response = await fetch(
           "/api/resource/upload",
           {
@@ -116,10 +102,7 @@ function UploadContent() {
           }
         );
 
-        // ---------------------------------------------------
-        // Parse response
-        // ---------------------------------------------------
-
+  
         const contentType =
           response.headers.get("content-type");
 
@@ -142,10 +125,7 @@ function UploadContent() {
           );
         }
 
-        // ---------------------------------------------------
-        // API error
-        // ---------------------------------------------------
-
+     
         if (!response.ok) {
           throw new Error(
             data.message ||
@@ -165,25 +145,16 @@ function UploadContent() {
         }
       }
 
-      // =====================================================
-      // LINK
-      // =====================================================
-
+  
       else {
-        // ---------------------------------------------------
-        // URL validation
-        // ---------------------------------------------------
-
+   
         if (!url.trim()) {
           setError("Please enter a URL.");
           setLoading(false);
           return;
         }
 
-        // ---------------------------------------------------
-        // API request
-        // ---------------------------------------------------
-
+    
         const response = await fetch(
           "/api/resource",
           {

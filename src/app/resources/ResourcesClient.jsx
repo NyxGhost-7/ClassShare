@@ -499,12 +499,10 @@ export default function ResourcesPage() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
 
               {filteredResources.map((resource) => (
-                <ResourceCard
-                  key={resource._id}
-                  resource={resource}
-                  currentUserId={
-                    classroom?.currentUserId
-                  }
+                <ResourceCard key={resource._id} resource={resource}
+                    currentUserId={
+                      classroom?.currentUserId
+                    }
                   classroomHostId={
                     classroom?.host?._id ||
                     classroom?.host

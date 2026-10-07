@@ -6,7 +6,8 @@ import { useSession } from "next-auth/react";
 import {Plus,LogIn, Users, BookOpen, X, Hash,  ArrowRight, GraduationCap, Globe,Lock,} from "lucide-react";
 import Navbar from "../../components/Navbar";
 import ClassroomCard from "../../components/ClassroomCard";
-
+import Modal from "./Modal";
+import StatCard from "./StatCard";
 export default function Dashboard() {
   const router = useRouter();
 
@@ -346,26 +347,7 @@ export default function Dashboard() {
               value={classrooms.length}
               label="My Classrooms"
             />
-{/* 
-            <StatCard
-              icon={
-                <BookOpen
-                  size={20}
-                />
-              }
-              value="0"
-              label="Shared Resources"
-            />
 
-            <StatCard
-              icon={
-                <Users
-                  size={20}
-                />
-              }
-              value="0"
-              label="Learning Together"
-            /> */}
 
           </section>
 
@@ -714,74 +696,6 @@ export default function Dashboard() {
 }
 
 
-function StatCard({
-  icon,
-  value,
-  label,
-}) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition hover:-translate-y-1 hover:border-indigo-400/20 hover:bg-white/[0.06]">
-
-      <div className="flex items-center justify-between">
-
-        <div className="rounded-sm bg-indigo-500/10 p-3 text-indigo-300">
-          {icon}
-        </div>
-
-        <span className="text-3xl font-bold">
-          {value}
-        </span>
-
-      </div>
-
-      <p className="mt-4 text-sm text-slate-500">
-        {label}
-      </p>
-
-    </div>
-  );
-}
 
 
-function Modal({
-  title,
-  subtitle,
-  onClose,
-  children,
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
 
-      {/* BACKDROP */}
-
-      <div
-        onClick={onClose}
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-      />
-
-      {/* MODAL */}
-
-      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-white/10 bg-black p-7 shadow-2xl">
-
-        <button
-          onClick={onClose}
-          className="absolute right-5 top-5 rounded-lg p-2 text-slate-500 transition hover:bg-white/10 hover:text-white"
-        >
-          <X size={20} />
-        </button>
-
-        <h2 className="text-2xl font-bold">
-          {title}
-        </h2>
-
-        <p className="mt-2 pr-6 text-sm leading-relaxed text-slate-400">
-          {subtitle}
-        </p>
-
-        {children}
-
-      </div>
-
-    </div>
-  );
-}

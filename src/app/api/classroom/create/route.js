@@ -10,9 +10,6 @@ import { authOptions } from "../../../../lib/auth";
 const CACHE_KEY = "public:classrooms";
 const CACHE_TTL = 60;
 
-// =========================================================
-// Generate classroom code
-// =========================================================
 
 function generateCode() {
   return (
@@ -24,21 +21,12 @@ function generateCode() {
   );
 }
 
-// =========================================================
-// CREATE CLASSROOM
-// =========================================================
 
 export async function POST(request) {
   try {
-    // -----------------------------------------------------
-    // 1. Connect MongoDB
-    // -----------------------------------------------------
 
     await connectDB();
 
-    // -----------------------------------------------------
-    // 2. Get session
-    // -----------------------------------------------------
 
     const session =
       await getServerSession(authOptions);
@@ -46,8 +34,7 @@ export async function POST(request) {
     if (!session?.user?.id) {
       return NextResponse.json(
         {
-          message:
-            "You must be logged in",
+          message: "You must be logged in",
         },
         {
           status: 401,
@@ -55,10 +42,7 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------------------------------
-    // 3. Find user
-    // -----------------------------------------------------
-
+ 
     const user = await User.findById(
       session.user.id
     );
@@ -74,9 +58,6 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------------------------------
-    // 4. Get request body
-    // -----------------------------------------------------
 
     const {
       name,
@@ -84,10 +65,7 @@ export async function POST(request) {
       privacy,
     } = await request.json();
 
-    // -----------------------------------------------------
-    // 5. Validate name
-    // -----------------------------------------------------
-
+  
     if (!name?.trim()) {
       return NextResponse.json(
         {
@@ -99,10 +77,6 @@ export async function POST(request) {
         }
       );
     }
-
-    // -----------------------------------------------------
-    // 6. Validate privacy
-    // -----------------------------------------------------
 
     if (
       !["public", "private"].includes(
@@ -120,9 +94,6 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------------------------------
-    // 7. Generate code for private classroom
-    // -----------------------------------------------------
 
     let code;
 
@@ -136,9 +107,7 @@ export async function POST(request) {
       }
     }
 
-    // -----------------------------------------------------
-    // 8. Create classroom in MongoDB
-    // -----------------------------------------------------
+
 
     const classroom =
       await Classroom.create({
@@ -161,16 +130,12 @@ export async function POST(request) {
       classroom._id.toString()
     );
 
-    // =====================================================
-    // 9. STORE PUBLIC CLASSROOM IN REDIS
-    // =====================================================
-
+ 
     if (privacy === "public") {
       console.log(
-        "⚡ Updating Redis cache..."
+        "⚡ Updating public classroom cache..."
       );
 
-      // Get existing Redis cache
       const cached =
         await redis.get(CACHE_KEY);
 
@@ -183,10 +148,7 @@ export async function POST(request) {
             : cached;
       }
 
-      // ---------------------------------------------------
-      // Create object in SAME format as GET API
-      // ---------------------------------------------------
-
+  
       const publicClassroom = {
         _id: classroom._id.toString(),
 
@@ -219,11 +181,12 @@ export async function POST(request) {
             String(publicClassroom._id)
         );
 
-   
+
       classrooms.unshift(
         publicClassroom
       );
 
+   
       await redis.set(
         CACHE_KEY,
         JSON.stringify(classrooms),
@@ -232,22 +195,23 @@ export async function POST(request) {
         }
       );
 
-     
+      console.log(
+        "New public classroom added to Redis"
+      );
     }
 
- 
+
     return NextResponse.json(
       {
+        success: true,
         message:
           "Classroom created successfully",
-
         classroom,
       },
       {
         status: 201,
       }
     );
-
   } catch (error) {
     console.error(
       "❌ CREATE CLASSROOM ERROR:",
@@ -256,8 +220,13 @@ export async function POST(request) {
 
     return NextResponse.json(
       {
+        success: false,
         message:
           "Failed to create classroom",
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
       },
       {
         status: 500,
