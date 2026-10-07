@@ -1,61 +1,23 @@
 
 "use client";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {ArrowRight,Ban,BookOpen,Globe2,Loader2,Users,} from "lucide-react";
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import Navbar from "@/Homepagecomponents/Navbar";
 import Banner from "@/Homepagecomponents/Banner";
-
-import Footer from "@/Homepagecomponents/Footer";
 import ClassesPage from "@/Homepagecomponents/ClassesPage";
-export default function Home() {
-  const router = useRouter();
+import Footer from "@/Homepagecomponents/Footer";
 
+export default function Home() {
   const [classrooms, setClassrooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-  loadPublicClassrooms();
-
-  const handleClassroomCreated = (event) => {
-    const classroom = event.detail;
-
-    if (!classroom || classroom.privacy !== "public") {
-      return;
-    }
-
-    setClassrooms((prev) => {
-      // duplicate protection
-      if (
-        prev.some(
-          (item) => item._id === classroom._id
-        )
-      ) {
-        return prev;
-      }
-
-      return [classroom, ...prev];
-    });
-  };
-
-  window.addEventListener(
-    "classroom-created",
-    handleClassroomCreated
-  );
-
-  return () => {
-    window.removeEventListener(
-      "classroom-created",
-      handleClassroomCreated
-    );
-  };
-}, []);
-
-  const loadPublicClassrooms = async () => {
+ 
+  const loadPublicClassrooms = async (signal) => {
     try {
       setLoading(true);
       setError("");
@@ -63,9 +25,7 @@ export default function Home() {
       const response = await fetch("/api/classroom/public", {
         method: "GET",
         cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        signal,
       });
 
       const data = await response.json();
@@ -82,6 +42,11 @@ export default function Home() {
           : []
       );
     } catch (error) {
+      // Ignore aborted requests
+      if (error?.name === "AbortError") {
+        return;
+      }
+
       console.error("PUBLIC CLASSROOM ERROR:", error);
 
       setError(
@@ -92,33 +57,88 @@ export default function Home() {
 
       setClassrooms([]);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
- 
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    loadPublicClassrooms(controller.signal);
+
+    const handleClassroomCreated = (event) => {
+      const classroom = event.detail;
+
+      // Only public classrooms should appear
+      if (!classroom || classroom.privacy !== "public") {
+        return;
+      }
+
+      setClassrooms((prev) => {
+        // Prevent duplicate classrooms
+        const alreadyExists = prev.some(
+          (item) => item._id === classroom._id
+        );
+
+        if (alreadyExists) {
+          return prev;
+        }
+
+        // Add newest classroom at the top
+        return [classroom, ...prev];
+      });
+    };
+
+    window.addEventListener(
+      "classroom-created",
+      handleClassroomCreated
+    );
+
+    return () => {
+      controller.abort();
+
+      window.removeEventListener(
+        "classroom-created",
+        handleClassroomCreated
+      );
+    };
+  }, []);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
-  
-    <Analytics />
-    <SpeedInsights />
+    <main className="relative min-h-screen mx-auto flex flex-col overflow-hidden bg-black text-white">
+      {/* Vercel monitoring */}
+      <Analytics />
+      <SpeedInsights />
 
-    <Navbar/>
-       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-100px)] max-w-7xl flex-col items-center justify-center px-6 pb-20 pt-10 text-center lg:px-8">
-   
-    <Banner/>
+      {/* Navigation */}
+      <div> <Navbar /> </div>
+
+      {/* Hero */}
+  
+
+      <Banner />
+  
+      
+      
+
+      {/* Public Classrooms */}
+      <section
+        id="public-classrooms"
+        className="relative z-10"
+      >
+        <ClassesPage
+          loading={loading}
+          error={error}
+          classrooms={classrooms}
+          loadPublicClassrooms={() => loadPublicClassrooms()}
+        />
       </section>
 
-      <ClassesPage
-        loading={loading}
-        error={error}
-        classrooms={classrooms}
-        loadPublicClassrooms={loadPublicClassrooms}
-      />
-
-          <Footer/>
+      {/* Footer */}
+      <Footer />
     </main>
   );
 }
-
