@@ -4,12 +4,12 @@ import ClassRoomPageHeader from './ClassRoomHeader';
 import ResourceHeader from './ResourceHeader';
 import ResourceCard from '@/components/ResourceCard';
 import EmptyState from './EmptyState';
-const Main = ({classroom,copied,copyLink,resources,session}) => {
+const Main = ({classroom,copied,copyLink,resources,session ,setResources,classroomId}) => {
   return (
     <main className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
-         <ClassRoomPageHeader classroom={classroom} copied={copied} copyLink={copyLink} />
+         <ClassRoomPageHeader classroom={classroom} copied={copied} copyLink={copyLink} classroomId={classroomId} />
 
-       <ResourceHeader/>
+       <ResourceHeader  classroomId={classroomId} />
 
         {resources.length > 0 && (
           <div className="mt-8 flex items-center gap-3">
@@ -33,7 +33,7 @@ const Main = ({classroom,copied,copyLink,resources,session}) => {
           {resources.length === 0 ? (
 
 
-           <EmptyState/>
+           <EmptyState classroomId={classroomId}/>
 
           ) : (
 

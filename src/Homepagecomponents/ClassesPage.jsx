@@ -5,7 +5,7 @@ import ErrorPage from './ErrorPage';
 import NoClassroom from './NoClassroom';
 import PublicClassroomCard from '@/components/PublicClassroomCard';
 import { useRouter } from 'next/navigation';
-const ClassesPage = ({loading , classrooms,error}) => {
+const ClassesPage = ({loading , classrooms,error, loadPublicClassrooms}) => {
     const router = useRouter();
   return (
      <section

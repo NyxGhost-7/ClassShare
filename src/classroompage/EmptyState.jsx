@@ -1,7 +1,7 @@
 import React from 'react'
 import { FolderOpen , Plus } from 'lucide-react'
 import { useRouter } from 'next/router'
-const EmptyState = () => {
+const EmptyState = ({classroomId}) => {
     const router = useRouter();
   return (
       <div className="relative overflow-hidden rounded-3xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-20 text-center">

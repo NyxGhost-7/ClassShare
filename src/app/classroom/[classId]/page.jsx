@@ -12,7 +12,7 @@ import { Copyleft } from "lucide-react";
 
 export default function ClassroomPage() {
   const params = useParams();
-  const router = useRouter();
+  
   const { data: session } = useSession();
 
   const classroomId = params.classId;
@@ -174,7 +174,7 @@ export default function ClassroomPage() {
 
       <Navbar />
 
-     <Main classroom={classroom} copied={copied} copyLink={copyLink} resources={resources} session={session} />
+     <Main classroom={classroom} copied={copied} copyLink={copyLink} resources={resources} session={session} setResources={setResources} classroomId={classroomId} />
 
     </div>
   );

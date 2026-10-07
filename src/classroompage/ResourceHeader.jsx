@@ -1,7 +1,7 @@
 import React from 'react'
 import { FolderOpen, Plus } from 'lucide-react';
 import {useRouter} from "next/navigation";
-const ResourceHeader = () => {
+const ResourceHeader = ({classroomId}) => {
   const router = useRouter();
   return (
     <section className="mt-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
