@@ -159,7 +159,7 @@ export default function ClassroomPage() {
     return (
        <div className="flex min-h-screen items-center justify-center bg-black text-white">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-indigo-400" />
+          {/* <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-indigo-400" /> */}
       <Loading/>
           
         </div>
