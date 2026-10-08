@@ -3,9 +3,6 @@
 
 import { useEffect, useState } from "react";
 
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-
 import Navbar from "@/Homepagecomponents/Navbar";
 import Banner from "@/Homepagecomponents/Banner";
 import ClassesPage from "@/Homepagecomponents/ClassesPage";
@@ -110,8 +107,7 @@ export default function Home() {
   return (
     <main className="relative min-h-screen mx-auto flex flex-col overflow-hidden bg-black text-white">
       {/* Vercel monitoring */}
-      <Analytics />
-      <SpeedInsights />
+   
 
       {/* Navigation */}
       <div> <Navbar /> </div>
