@@ -1,6 +1,7 @@
 import React from 'react'
 import { FolderOpen , Plus } from 'lucide-react'
-import { useRouter } from 'next/router'
+// import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 const EmptyState = ({classroomId}) => {
     const router = useRouter();
   return (

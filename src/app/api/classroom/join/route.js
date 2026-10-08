@@ -42,9 +42,6 @@ export async function POST(request) {
     const classroomCode =
       code.trim().toUpperCase();
 
-    // =========================
-    // FIND PUBLIC OR PRIVATE CLASS
-    // =========================
 
     const classroom =
       await Classroom.findOne({
@@ -64,7 +61,7 @@ export async function POST(request) {
     }
 
     const userId = session.user.id;
-    const isHost =classroom.host.toString() ===userId.toString();
+    const isHost =classroom.host.toString() === userId.toString();
     if (isHost) {
       return NextResponse.json({
         message:
