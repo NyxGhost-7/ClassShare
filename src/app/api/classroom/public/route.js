@@ -1,6 +1,7 @@
 
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 
+import { after } from "next/server";
 import { connectDB } from "../../../../lib/mongodb";
 import Classroom from "../../../../models/Classroom";
 import redis from "@/lib/redis";
@@ -8,9 +9,14 @@ import redis from "@/lib/redis";
 const CACHE_KEY = "public:classrooms";
 const CACHE_TTL = 60;
 
-// Fetch latest public classrooms from MongoDB
+// Escape special regex characters
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Get all public classrooms from MongoDB
 async function getPublicClassrooms() {
-  return await Classroom.find({
+  return Classroom.find({
     privacy: "public",
   })
     .populate("host", "name image")
@@ -18,102 +24,123 @@ async function getPublicClassrooms() {
     .lean();
 }
 
-// Store classrooms in Redis
+// Get classroom from MongoDB by search
+async function searchMongoDB(search) {
+  await connectDB();
+
+  if (!search) {
+    return getPublicClassrooms();
+  }
+
+  const regex = new RegExp(escapeRegex(search), "i");
+
+  return Classroom.find({
+    privacy: "public",
+    $or: [
+      { name: regex },
+      { code: regex },
+      { _id: search.match(/^[a-f\d]{24}$/i) ? search : null },
+    ],
+  })
+    .populate("host", "name image")
+    .sort({ createdAt: -1 })
+    .lean();
+}
+
+// Save classrooms in Redis
 async function updateRedisCache(classrooms) {
   await redis.set(
     CACHE_KEY,
     JSON.stringify(classrooms),
-    {
-      ex: CACHE_TTL,
-    }
+    { ex: CACHE_TTL }
   );
 }
 
-export async function GET() {
+// Read Redis cache
+async function getRedisCache() {
+  const data = await redis.get(CACHE_KEY);
+
+  if (data === null || data === undefined) {
+    return null;
+  }
+
+  return typeof data === "string"
+    ? JSON.parse(data)
+    : data;
+}
+
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search")?.trim() || "";
 
     let cachedClassrooms = null;
 
+    // STEP 1: Search Redis
     try {
-      const cachedData = await redis.get(CACHE_KEY);
-
-      if (cachedData !== null && cachedData !== undefined) {
-        cachedClassrooms =
-          typeof cachedData === "string"
-            ? JSON.parse(cachedData)
-            : cachedData;
-      }
-    } catch (redisError) {
-      console.error("Redis GET ERROR:", redisError);
+      cachedClassrooms = await getRedisCache();
+    } catch (error) {
+      console.error("REDIS GET ERROR:", error);
     }
 
- 
     if (cachedClassrooms !== null) {
-      console.log("Redis Cache HIT");
+      console.log("REDIS CACHE HIT");
 
-      // Background revalidation
-      // Current response will NOT wait for MongoDB.
+      // STEP 2: Search inside Redis data
+      const filteredClassrooms = search
+        ? cachedClassrooms.filter((classroom) => {
+            const value = search.toLowerCase();
 
+            return (
+              classroom.name?.toLowerCase().includes(value) ||
+              classroom.code?.toLowerCase().includes(value) ||
+              classroom._id?.toString() === search
+            );
+          })
+        : cachedClassrooms;
+
+      // If found in Redis, return immediately
+      if (filteredClassrooms.length > 0 || !search) {
+        return NextResponse.json({
+          success: true,
+          classrooms: filteredClassrooms,
+          source: "redis",
+        });
+      }
+
+      console.log("CLASSROOM NOT FOUND IN REDIS");
+    } else {
+      console.log("REDIS CACHE MISS");
+    }
+
+    // STEP 3: Search MongoDB if Redis misses
+    console.log("SEARCHING MONGODB...");
+
+    const classrooms = await searchMongoDB(search);
+
+    // STEP 4: Update Redis cache
+    // Only cache the complete public classroom list.
+    if (!search) {
+      try {
+        await updateRedisCache(classrooms);
+        console.log("REDIS CACHE UPDATED");
+      } catch (error) {
+        console.error("REDIS SET ERROR:", error);
+      }
+    } else if (classrooms.length > 0) {
+      // Refresh the complete cache in background
       after(async () => {
         try {
-          await connectDB();
-
-          const latestClassrooms =
-            await getPublicClassrooms();
-
-          // Compare Redis and MongoDB lengths
-          if (
-            latestClassrooms.length !==
-            cachedClassrooms.length
-          ) {
-            console.log(
-              "Classroom count changed. Updating Redis..."
-            );
-
-            await updateRedisCache(latestClassrooms);
-
-            console.log("Redis Cache Updated");
-          } else {
-            console.log(
-              "Redis Cache is up to date"
-            );
-          }
-
+          const allClassrooms = await getPublicClassrooms();
+          await updateRedisCache(allClassrooms);
+          console.log("REDIS CACHE REFRESHED");
         } catch (error) {
-          console.error(
-            "BACKGROUND CACHE REVALIDATION ERROR:",
-            error
-          );
+          console.error("BACKGROUND CACHE ERROR:", error);
         }
       });
-
-      // Immediately return OLD cached data
-      return NextResponse.json({
-        success: true,
-        classrooms: cachedClassrooms,
-        source: "redis",
-      });
     }
 
-    console.log("Redis Cache MISS");
-
-    await connectDB();
-
-    const classrooms = await getPublicClassrooms();
-
-    // Store fresh MongoDB data in Redis
-    try {
-      await updateRedisCache(classrooms);
-
-      console.log("Redis Cache Created");
-    } catch (redisError) {
-      console.error(
-        "Redis CACHE SET ERROR:",
-        redisError
-      );
-    }
-
-  
+    // STEP 5: Return MongoDB result
     return NextResponse.json({
       success: true,
       classrooms,
@@ -121,10 +148,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error(
-      "GET PUBLIC CLASSROOMS ERROR:",
-      error
-    );
+    console.error("PUBLIC CLASSROOM API ERROR:", error);
 
     return NextResponse.json(
       {
@@ -135,9 +159,7 @@ export async function GET() {
             ? error.message
             : undefined,
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
